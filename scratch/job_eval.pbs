@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N eval_corrected_cod
+#PBS -q gpu
+#PBS -l select=1:ncpus=8:ngpus=1:mem=32g
+#PBS -j oe
+#PBS -V
+
+cd $PBS_O_WORKDIR
+
+# conda setup
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+
+# cuda module load
+module load cuda
+
+# run python script
+python3 /home/ronit.28010/COD_Project/scratch/eval_corrected.py > /home/ronit.28010/COD_Project/scratch/eval_results.log 2>&1

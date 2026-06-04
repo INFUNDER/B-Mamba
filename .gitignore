@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS files
+.DS_Store
+
+# Data and large weights
+dataset/
+cod_comparison/checkpoints/
+
+# System and Scheduler Logs
+*.o[0-9]*
+*.e[0-9]*
+*.log
+
+# Matplotlib cache / temporary files
+.cache/
+.ipynb_checkpoints/
