@@ -53,10 +53,8 @@ All configurations were trained under matched conditions for 100 epochs on a sin
 │       ├── train.py           # Shared, controlled training script
 │       ├── losses.py          # Multi-task composite loss function
 │       └── metrics.py         # Corrected standard evaluation metrics class
-├── main2fig/                  # Image assets for the paper and README
-│   ├── fig7_architecture_schematic.png
-│   ├── fig5_best_checkpoint_bar.png
-│   └── fig6_gain_decomposition.png
+├── main2fig/                  # Image assets for README
+│   └── fig7_architecture_schematic.png
 ├── scratch/                   # Inference scripts and job submission helpers
 │   ├── eval_cam_only.py       # Core evaluation script (CAM-only test set)
 │   └── job_eval_cam_only.pbs  # PBS HPC job script for GPU evaluation
