@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N cod-visualize
+#PBS -N train-polyp-bmamba
 #PBS -q gpu
 #PBS -l select=1:ncpus=8:ngpus=1:mem=64g
 #PBS -l walltime=72:00:00
@@ -13,9 +13,5 @@ source /home/soft/anaconda3/etc/profile.d/conda.sh
 conda activate cod10
 module load cuda
 
-# Crucial: Run from the project root so paths align
-python visualize_predictions.py \
-    --data_root dataset/COD10K \
-    --cod_root  ./cod_comparison \
-    --output_dir ./visualizations \
-    --n_samples 5
+# Run the training script for Boundary-Aware Mamba on Polyp Segmentation
+python train_polyp.py
