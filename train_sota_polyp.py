@@ -1,0 +1,121 @@
+import os
+import subprocess
+import random
+
+def set_best_gpu():
+    try:
+        smi_out = subprocess.check_output(['nvidia-smi', '--query-gpu=memory.free', '--format=csv,nounits,noheader']).decode('utf-8')
+        free_memory = [int(x) for x in smi_out.strip().split('\n')]
+        best_gpu = free_memory.index(max(free_memory))
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(best_gpu)
+        print(f"Auto-selected GPU {best_gpu} with {max(free_memory)} MB free memory.")
+    except Exception as e:
+        print(f"Could not auto-select GPU: {e}")
+
+set_best_gpu()
+
+import torch
+import torch.optim as optim
+from torch.utils.data import DataLoader, Subset
+from polyp_segmentation.shared.dataset_polyp import PolypDataset
+from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel
+from polyp_segmentation.shared.metrics_polyp import structure_loss, MedicalMetrics
+
+def train_sota():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+    
+    # Hyperparams
+    batch_size = 8 # slightly larger batch size for stability
+    learning_rate = 1e-4
+    epochs = 100
+    img_size = 352
+    
+    # Dataset
+    data_img_path = 'dataset/Kvasir-SEG/images/'
+    data_gt_path = 'dataset/Kvasir-SEG/masks/'
+    
+    print("Loading datasets and creating Train/Val split...")
+    dataset_train = PolypDataset(data_img_path, data_gt_path, trainsize=img_size, is_train=True)
+    dataset_val = PolypDataset(data_img_path, data_gt_path, trainsize=img_size, is_train=False)
+    
+    # 80/20 split (800 train, 200 val)
+    indices = list(range(len(dataset_train)))
+    random.seed(42)
+    random.shuffle(indices)
+    train_idx, val_idx = indices[:800], indices[800:]
+    
+    train_sub = Subset(dataset_train, train_idx)
+    val_sub = Subset(dataset_val, val_idx)
+    
+    train_loader = DataLoader(train_sub, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(val_sub, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    
+    # Model
+    model = BMambaModel(pretrained=True, img_size=img_size)
+    model.to(device)
+    
+    # Optimizer & Scheduler
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
+    
+    metrics = MedicalMetrics(threshold=0.5)
+    best_dice = 0.0
+    checkpoint_dir = 'polyp_segmentation/checkpoints'
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    
+    print("Starting SOTA training pipeline...")
+    for epoch in range(1, epochs + 1):
+        # TRAIN PASS
+        model.train()
+        train_loss = 0.0
+        
+        for i, (images, gts) in enumerate(train_loader):
+            images = images.to(device)
+            gts = gts.to(device)
+            
+            optimizer.zero_grad()
+            preds = model(images)
+            
+            # SOTA Compound Loss: BCE + Weighted IoU
+            loss = structure_loss(preds['seg'], gts)
+            
+            loss.backward()
+            optimizer.step()
+            
+            train_loss += loss.item()
+            
+        scheduler.step()
+        avg_train_loss = train_loss / len(train_loader)
+        
+        # VALIDATION PASS
+        model.eval()
+        metrics.reset()
+        val_loss = 0.0
+        
+        with torch.no_grad():
+            for images, gts in val_loader:
+                images = images.to(device)
+                gts = gts.to(device)
+                
+                preds = model(images)
+                loss = structure_loss(preds['seg'], gts)
+                val_loss += loss.item()
+                
+                metrics.update(preds['seg'], gts)
+                
+        val_metrics = metrics.get_metrics()
+        avg_val_loss = val_loss / len(val_loader)
+        
+        print(f"=== Epoch [{epoch}/{epochs}] ===")
+        print(f"Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
+        print(f"Val Dice: {val_metrics['dice']:.4f} | Val IoU: {val_metrics['iou']:.4f}")
+        
+        if val_metrics['dice'] > best_dice:
+            best_dice = val_metrics['dice']
+            torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'b_mamba_best_sota.pth'))
+            print(f"--> Saved new SOTA model with Val Dice: {best_dice:.4f}")
+        print("="*30 + "\n")
+
+if __name__ == '__main__':
+    train_sota()

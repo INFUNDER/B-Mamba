@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N visualize-bmamba
+#PBS -q gpu
+#PBS -l select=1:ncpus=8:ngpus=1:mem=32g
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+module load cuda
+
+# Generate visualization PNGs
+python visualize_polyp.py
+
+# Run cross-dataset testing
+python test_cross_dataset.py

@@ -73,3 +73,19 @@ def compute_dice_loss(pred, gt, smooth=1.0):
     
     # Loss is 1 - Dice
     return 1.0 - dice.mean()
+
+def structure_loss(pred, mask):
+    """
+    Structure loss combining weighted BCE and weighted IoU.
+    Standard loss for polyp segmentation architectures.
+    """
+    weit = 1 + 5*torch.abs(F.avg_pool2d(mask, kernel_size=31, stride=1, padding=15) - mask)
+    wbce = F.binary_cross_entropy_with_logits(pred, mask, reduce='none')
+    wbce = (weit*wbce).sum(dim=(2, 3)) / weit.sum(dim=(2, 3))
+
+    pred = torch.sigmoid(pred)
+    inter = ((pred * mask)*weit).sum(dim=(2, 3))
+    union = ((pred + mask)*weit).sum(dim=(2, 3))
+    wiou = 1 - (inter + 1)/(union - inter + 1)
+    
+    return (wbce + wiou).mean()

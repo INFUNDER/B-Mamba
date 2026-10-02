@@ -1,4 +1,17 @@
 import os
+import subprocess
+
+def set_best_gpu():
+    try:
+        smi_out = subprocess.check_output(['nvidia-smi', '--query-gpu=memory.free', '--format=csv,nounits,noheader']).decode('utf-8')
+        free_memory = [int(x) for x in smi_out.strip().split('\n')]
+        best_gpu = free_memory.index(max(free_memory))
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(best_gpu)
+        print(f"Auto-selected GPU {best_gpu} with {max(free_memory)} MB free memory.")
+    except Exception as e:
+        print(f"Could not auto-select GPU: {e}")
+
+set_best_gpu()
 import torch
 import torch.optim as optim
 from polyp_segmentation.shared.dataset_polyp import get_loader
@@ -12,7 +25,7 @@ def train():
     # Hyperparams
     batch_size = 4
     learning_rate = 1e-4
-    epochs = 10
+    epochs = 100
     img_size = 352
     
     # Dataset
@@ -37,6 +50,9 @@ def train():
     
     # Metrics Tracker
     metrics = MedicalMetrics(threshold=0.5)
+    best_dice = 0.0
+    checkpoint_dir = 'polyp_segmentation/checkpoints'
+    os.makedirs(checkpoint_dir, exist_ok=True)
     
     print("Starting training...")
     for epoch in range(1, epochs + 1):
@@ -72,6 +88,12 @@ def train():
         print(f"Avg Loss: {epoch_loss / len(train_loader):.4f}")
         print(f"Dice Score (DSC): {train_metrics['dice']:.4f}")
         print(f"IoU Score: {train_metrics['iou']:.4f}")
+        
+        if train_metrics['dice'] > best_dice:
+            best_dice = train_metrics['dice']
+            torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'b_mamba_best.pth'))
+            print(f"--> Saved new best model with Dice: {best_dice:.4f}")
+            
         print("=============================\n")
 
 if __name__ == '__main__':
