@@ -15,4 +15,4 @@ module load cuda
 python visualize_polyp.py
 
 # Run cross-dataset testing
-python test_cross_dataset.py
+python test_pranet_split.py

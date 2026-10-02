@@ -2,7 +2,7 @@ import os
 import torch
 import matplotlib.pyplot as plt
 from polyp_segmentation.shared.dataset_polyp import PolypDataset
-from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel
+from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel_Pro
 import numpy as np
 
 def visualize():
@@ -17,7 +17,7 @@ def visualize():
         print(f"Error: Could not find trained model at {model_path}. Please complete training first.")
         return
         
-    model = BMambaModel(pretrained=False, img_size=img_size)
+    model = BMambaModel_Pro(pretrained=False, img_size=img_size)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()

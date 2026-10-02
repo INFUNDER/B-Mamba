@@ -18,8 +18,9 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
 from polyp_segmentation.shared.dataset_polyp import PolypDataset
-from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel
+from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel_Pro
 from polyp_segmentation.shared.metrics_polyp import structure_loss, MedicalMetrics
+import torch.nn.functional as F
 
 def train_sota():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -31,19 +32,21 @@ def train_sota():
     epochs = 100
     img_size = 352
     
-    # Dataset
-    data_img_path = 'dataset/Kvasir-SEG/images/'
-    data_gt_path = 'dataset/Kvasir-SEG/masks/'
+    # Dataset (PraNet Protocol: 900 Kvasir + 550 ClinicDB)
+    data_img_path = 'dataset/PraNet_Split/TrainDataset/images/'
+    data_gt_path = 'dataset/PraNet_Split/TrainDataset/masks/'
     
     print("Loading datasets and creating Train/Val split...")
     dataset_train = PolypDataset(data_img_path, data_gt_path, trainsize=img_size, is_train=True)
     dataset_val = PolypDataset(data_img_path, data_gt_path, trainsize=img_size, is_train=False)
     
-    # 80/20 split (800 train, 200 val)
+    # 90/10 split on the composite 1450 dataset
     indices = list(range(len(dataset_train)))
     random.seed(42)
     random.shuffle(indices)
-    train_idx, val_idx = indices[:800], indices[800:]
+    
+    val_size = int(len(indices) * 0.1)
+    train_idx, val_idx = indices[:-val_size], indices[-val_size:]
     
     train_sub = Subset(dataset_train, train_idx)
     val_sub = Subset(dataset_val, val_idx)
@@ -51,8 +54,8 @@ def train_sota():
     train_loader = DataLoader(train_sub, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = DataLoader(val_sub, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     
-    # Model
-    model = BMambaModel(pretrained=True, img_size=img_size)
+    # Model (SOTA Pro Version)
+    model = BMambaModel_Pro(pretrained=True, img_size=img_size)
     model.to(device)
     
     # Optimizer & Scheduler
@@ -77,8 +80,11 @@ def train_sota():
             optimizer.zero_grad()
             preds = model(images)
             
-            # SOTA Compound Loss: BCE + Weighted IoU
-            loss = structure_loss(preds['seg'], gts)
+            # Deep Supervision Loss
+            loss1 = structure_loss(preds['seg'], gts)
+            loss2 = structure_loss(preds['seg3'], gts)
+            loss3 = structure_loss(preds['seg4'], gts)
+            loss = loss1 + loss2 + loss3
             
             loss.backward()
             optimizer.step()

@@ -1,7 +1,7 @@
 import os
 import torch
 from polyp_segmentation.shared.dataset_polyp import get_loader
-from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel
+from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel_Pro
 from polyp_segmentation.shared.metrics_polyp import MedicalMetrics
 
 def test_cross_dataset():
@@ -15,7 +15,7 @@ def test_cross_dataset():
         print(f"Error: {model_path} not found.")
         return
         
-    model = BMambaModel(pretrained=False, img_size=img_size)
+    model = BMambaModel_Pro(pretrained=False, img_size=img_size)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()

@@ -221,3 +221,98 @@ class BMambaModel(nn.Module):
                                size=tgt, mode='bilinear', align_corners=False)
                                
         return {'seg': seg}
+
+# ==============================================================================
+# BMambaModel_Pro (SOTA Version with Deep Supervision & Swin-Base)
+# ==============================================================================
+
+class SwinBaseBackbone(nn.Module):
+    OUT_CHANNELS = [128, 256, 512, 1024]
+    def __init__(self, pretrained=True, input_size=352):
+        super().__init__()
+        self.swin = timm.create_model(
+            'swin_base_patch4_window7_224',
+            pretrained=pretrained,
+            features_only=True, out_indices=(0,1,2,3),
+            img_size=(input_size, input_size))
+
+    def forward(self, x):
+        return [f.permute(0,3,1,2).contiguous() for f in self.swin(x)]
+
+class ProgressiveDecoder_Pro(nn.Module):
+    def __init__(self, fpn_ch=256, fused_ch=512):
+        super().__init__()
+        self.aspp = ASPP(fused_ch, 256)
+        self.lat4 = nn.Sequential(nn.Conv2d(fpn_ch,128,1), nn.ReLU(inplace=True))
+        self.lat3 = nn.Sequential(nn.Conv2d(fpn_ch, 64,1), nn.ReLU(inplace=True))
+        self.lat2 = nn.Sequential(nn.Conv2d(fpn_ch, 32,1), nn.ReLU(inplace=True))
+        self.ref4 = nn.Sequential(nn.Conv2d(256+128,128,3,padding=1), nn.BatchNorm2d(128), nn.ReLU(inplace=True))
+        self.ref3 = nn.Sequential(nn.Conv2d(128+64,  64,3,padding=1), nn.BatchNorm2d(64),  nn.ReLU(inplace=True))
+        self.ref2 = nn.Sequential(nn.Conv2d(64+32, 32,3,padding=1), nn.BatchNorm2d(32),  nn.ReLU(inplace=True))
+        
+        # Deep Supervision Heads
+        self.head4 = nn.Conv2d(128, 1, 1)
+        self.head3 = nn.Conv2d(64, 1, 1)
+        self.head2 = nn.Conv2d(32, 1, 1)
+
+    def forward(self, fused, fpn):
+        x4 = self.aspp(fused)
+        x4 = F.interpolate(x4, size=fpn['p4'].shape[-2:], mode='bilinear', align_corners=False)
+        x4 = self.ref4(torch.cat([x4, self.lat4(fpn['p4'])], dim=1))
+        out4 = self.head4(x4)
+        
+        x3 = F.interpolate(x4, size=fpn['p3'].shape[-2:], mode='bilinear', align_corners=False)
+        x3 = self.ref3(torch.cat([x3, self.lat3(fpn['p3'])], dim=1))
+        out3 = self.head3(x3)
+        
+        x2 = F.interpolate(x3, size=fpn['p2'].shape[-2:], mode='bilinear', align_corners=False)
+        x2 = self.ref2(torch.cat([x2, self.lat2(fpn['p2'])], dim=1))
+        out2 = self.head2(x2)
+        
+        return out2, out3, out4
+
+class BMambaModel_Pro(nn.Module):
+    FPN_OUT   = 256
+    BRANCH_CH = 512
+
+    def __init__(self, mamba_depth=4, mamba_d_state=16, pretrained=True, img_size=352):
+        super().__init__()
+        self.backbone    = SwinBaseBackbone(pretrained=pretrained, input_size=img_size)
+        self.fpn         = FeaturePyramidNetwork(
+            in_channels_list=SwinBaseBackbone.OUT_CHANNELS, out_channels=self.FPN_OUT)
+        
+        ch = self.BRANCH_CH
+        self.res_proj    = nn.Sequential(nn.Conv2d(self.FPN_OUT,ch,1),
+                                          nn.BatchNorm2d(ch), nn.ReLU(inplace=True))
+        self.mamba_proj  = nn.Sequential(nn.Conv2d(self.FPN_OUT,ch,1),
+                                          nn.BatchNorm2d(ch), nn.ReLU(inplace=True))
+        
+        self.texture_enh = TextureEnhancement(ch=ch)
+        self.b_mamba     = BMambaBranch(channels=ch, depth=mamba_depth, d_state=mamba_d_state)
+        
+        self.fusion      = nn.Sequential(nn.Conv2d(ch*2,ch,1), nn.BatchNorm2d(ch), nn.ReLU(inplace=True))
+        self.decoder     = ProgressiveDecoder_Pro(self.FPN_OUT, ch)
+
+    def forward(self, x):
+        tgt = x.shape[2:]
+        c1, c2, c3, c4 = self.backbone(x)
+        raw  = self.fpn({'0':c1,'1':c2,'2':c3,'3':c4})
+        fpn  = {'p2':raw['0'],'p3':raw['1'],'p4':raw['2'],'p5':raw['3']}
+
+        feat_r, bnd_feat = self.texture_enh(self.res_proj(fpn['p5']))
+        feat_m = self.b_mamba(self.mamba_proj(fpn['p5']), bnd_feat)
+        
+        if feat_m.shape[-2:] != feat_r.shape[-2:]:
+            feat_m = F.interpolate(feat_m, size=feat_r.shape[-2:], mode='bilinear', align_corners=False)
+                                   
+        fused  = self.fusion(torch.cat([feat_r, feat_m], dim=1))
+        out2, out3, out4 = self.decoder(fused, fpn)
+        
+        seg = F.interpolate(out2, size=tgt, mode='bilinear', align_corners=False)
+        seg3 = F.interpolate(out3, size=tgt, mode='bilinear', align_corners=False)
+        seg4 = F.interpolate(out4, size=tgt, mode='bilinear', align_corners=False)
+                               
+        if self.training:
+            return {'seg': seg, 'seg3': seg3, 'seg4': seg4}
+        else:
+            return {'seg': seg}
