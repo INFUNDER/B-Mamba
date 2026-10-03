@@ -21,20 +21,37 @@ from polyp_segmentation.shared.dataset_polyp import PolypDataset
 from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel_Pro
 from polyp_segmentation.shared.metrics_polyp import structure_loss, MedicalMetrics
 import torch.nn.functional as F
+import torch.nn.functional as F
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run_name', type=str, default='sota')
+    parser.add_argument('--no_deep_sup', action='store_true')
+    parser.add_argument('--no_boundary', action='store_true')
+    parser.add_argument('--epochs', type=int, default=100)
+    # Use dataset/PraNet_Official/TrainDataset for the leak-free official split
+    parser.add_argument('--train_root', type=str, default='dataset/PraNet_Split/TrainDataset')
+    parser.add_argument('--seed', type=int, default=42)
+    return parser.parse_args()
 
 def train_sota():
+    args = parse_args()
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
     # Hyperparams
     batch_size = 8 # slightly larger batch size for stability
     learning_rate = 1e-4
-    epochs = 100
+    epochs = args.epochs
     img_size = 352
     
     # Dataset (PraNet Protocol: 900 Kvasir + 550 ClinicDB)
-    data_img_path = 'dataset/PraNet_Split/TrainDataset/images/'
-    data_gt_path = 'dataset/PraNet_Split/TrainDataset/masks/'
+    torch.manual_seed(args.seed)
+    data_img_path = os.path.join(args.train_root, 'images') + '/'
+    data_gt_path = os.path.join(args.train_root, 'masks') + '/'
+    print(f"Training root: {args.train_root}")
     
     print("Loading datasets and creating Train/Val split...")
     dataset_train = PolypDataset(data_img_path, data_gt_path, trainsize=img_size, is_train=True)
@@ -42,7 +59,7 @@ def train_sota():
     
     # 90/10 split on the composite 1450 dataset
     indices = list(range(len(dataset_train)))
-    random.seed(42)
+    random.seed(args.seed)
     random.shuffle(indices)
     
     val_size = int(len(indices) * 0.1)
@@ -55,7 +72,12 @@ def train_sota():
     val_loader = DataLoader(val_sub, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     
     # Model (SOTA Pro Version)
-    model = BMambaModel_Pro(pretrained=True, img_size=img_size)
+    model = BMambaModel_Pro(
+        pretrained=True, 
+        img_size=img_size, 
+        use_deep_sup=not args.no_deep_sup, 
+        use_boundary=not args.no_boundary
+    )
     model.to(device)
     
     # Optimizer & Scheduler
@@ -81,10 +103,13 @@ def train_sota():
             preds = model(images)
             
             # Deep Supervision Loss
-            loss1 = structure_loss(preds['seg'], gts)
-            loss2 = structure_loss(preds['seg3'], gts)
-            loss3 = structure_loss(preds['seg4'], gts)
-            loss = loss1 + loss2 + loss3
+            if not args.no_deep_sup:
+                loss1 = structure_loss(preds['seg'], gts)
+                loss2 = structure_loss(preds['seg3'], gts)
+                loss3 = structure_loss(preds['seg4'], gts)
+                loss = loss1 + loss2 + loss3
+            else:
+                loss = structure_loss(preds['seg'], gts)
             
             loss.backward()
             optimizer.step()
@@ -119,7 +144,7 @@ def train_sota():
         
         if val_metrics['dice'] > best_dice:
             best_dice = val_metrics['dice']
-            torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'b_mamba_best_sota.pth'))
+            torch.save(model.state_dict(), os.path.join(checkpoint_dir, f'b_mamba_best_{args.run_name}.pth'))
             print(f"--> Saved new SOTA model with Val Dice: {best_dice:.4f}")
         print("="*30 + "\n")
 

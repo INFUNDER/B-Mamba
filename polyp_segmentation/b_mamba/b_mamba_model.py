@@ -49,7 +49,7 @@ class BoundaryAwareMambaBlock(nn.Module):
         self.D       = nn.Parameter(torch.ones(d_inner))
         self.out_proj= nn.Linear(d_inner, dim, bias=False)
 
-    def forward(self, x, boundary_seq):
+    def forward(self, x, boundary_seq=None):
         residual = x
         x = self.norm(x)
         
@@ -59,10 +59,12 @@ class BoundaryAwareMambaBlock(nn.Module):
         x_conv  = self.conv1d(x_in.transpose(1,2))[:,:,:L].transpose(1,2)
         x_conv  = self.act(x_conv)
         
-        # Concatenate standard features with boundary features
-        # boundary_seq must have same sequence length and d_inner channels
-        x_cond  = torch.cat([x_conv, boundary_seq], dim=-1)
-        
+        if boundary_seq is not None:
+            x_cond  = torch.cat([x_conv, boundary_seq], dim=-1)
+        else:
+            # If ablation removes boundary, just pad with zeros or self features
+            x_cond  = torch.cat([x_conv, torch.zeros_like(x_conv)], dim=-1)
+            
         x_dbl   = self.x_proj(x_cond)
         B_ssm   = x_dbl[..., :self.d_state]
         C_ssm   = x_dbl[..., self.d_state:self.d_state*2]
@@ -86,13 +88,16 @@ class BMambaBranch(nn.Module):
         self.proj_out = nn.Conv2d(channels, channels, 1)
         self.norm     = nn.LayerNorm(channels)
 
-    def forward(self, x, boundary_feat):
+    def forward(self, x, boundary_feat=None):
         B_sz, C, H, W = x.shape
         x   = self.proj_in(x)
         
         # Project and flatten boundary features
-        bnd = self.bnd_proj(boundary_feat) # (B, channels*2, H, W)
-        bnd_seq = bnd.flatten(2).transpose(1, 2)
+        if boundary_feat is not None:
+            bnd = self.bnd_proj(boundary_feat) # (B, channels*2, H, W)
+            bnd_seq = bnd.flatten(2).transpose(1, 2)
+        else:
+            bnd_seq = None
         
         seq = x.flatten(2).transpose(1, 2)
         for blk in self.blocks:
@@ -275,8 +280,11 @@ class BMambaModel_Pro(nn.Module):
     FPN_OUT   = 256
     BRANCH_CH = 512
 
-    def __init__(self, mamba_depth=4, mamba_d_state=16, pretrained=True, img_size=352):
+    def __init__(self, mamba_depth=4, mamba_d_state=16, pretrained=True, img_size=352, use_deep_sup=True, use_boundary=True):
         super().__init__()
+        self.use_deep_sup = use_deep_sup
+        self.use_boundary = use_boundary
+        
         self.backbone    = SwinBaseBackbone(pretrained=pretrained, input_size=img_size)
         self.fpn         = FeaturePyramidNetwork(
             in_channels_list=SwinBaseBackbone.OUT_CHANNELS, out_channels=self.FPN_OUT)
@@ -300,19 +308,25 @@ class BMambaModel_Pro(nn.Module):
         fpn  = {'p2':raw['0'],'p3':raw['1'],'p4':raw['2'],'p5':raw['3']}
 
         feat_r, bnd_feat = self.texture_enh(self.res_proj(fpn['p5']))
+        
+        if not self.use_boundary:
+            bnd_feat = None
+            
         feat_m = self.b_mamba(self.mamba_proj(fpn['p5']), bnd_feat)
         
         if feat_m.shape[-2:] != feat_r.shape[-2:]:
             feat_m = F.interpolate(feat_m, size=feat_r.shape[-2:], mode='bilinear', align_corners=False)
                                    
         fused  = self.fusion(torch.cat([feat_r, feat_m], dim=1))
-        out2, out3, out4 = self.decoder(fused, fpn)
-        
-        seg = F.interpolate(out2, size=tgt, mode='bilinear', align_corners=False)
-        seg3 = F.interpolate(out3, size=tgt, mode='bilinear', align_corners=False)
-        seg4 = F.interpolate(out4, size=tgt, mode='bilinear', align_corners=False)
-                               
-        if self.training:
-            return {'seg': seg, 'seg3': seg3, 'seg4': seg4}
+        if self.use_deep_sup:
+            out2, out3, out4 = self.decoder(fused, fpn)
+            seg = F.interpolate(out2, size=tgt, mode='bilinear', align_corners=False)
+            seg3 = F.interpolate(out3, size=tgt, mode='bilinear', align_corners=False)
+            seg4 = F.interpolate(out4, size=tgt, mode='bilinear', align_corners=False)
+            if self.training:
+                return {'seg': seg, 'seg3': seg3, 'seg4': seg4}
+            return {'seg': seg}
         else:
+            out2, _, _ = self.decoder(fused, fpn)
+            seg = F.interpolate(out2, size=tgt, mode='bilinear', align_corners=False)
             return {'seg': seg}

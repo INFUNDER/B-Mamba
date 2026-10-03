@@ -18,3 +18,15 @@ polyp_segmentation/checkpoints/
 # Matplotlib cache / temporary files
 .cache/
 .ipynb_checkpoints/
+
+# LaTeX
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.bbl
+*.blg
+*.bcf
+*.xml
+*.synctex.gz

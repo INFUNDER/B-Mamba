@@ -1,0 +1,41 @@
+#!/bin/bash
+#PBS -N bmamba_ablations
+#PBS -l select=1:ncpus=4:mem=32GB:ngpus=1
+#PBS -q gpu
+#PBS -l walltime=48:00:00
+
+cd $PBS_O_WORKDIR
+
+# Load environment
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+
+mkdir -p ablation_logs
+
+echo "Starting Full Ablation Pipeline..."
+
+# 1. Baseline Model (No Deep Supervision, No Edge Priors)
+echo "Training Baseline..."
+python train_sota_polyp.py --run_name ablation_baseline --no_deep_sup --no_boundary --epochs 50 > ablation_logs/train_baseline.log
+echo "Evaluating Baseline..."
+python test_pranet_split.py --run_name ablation_baseline --no_deep_sup --no_boundary > ablation_logs/test_baseline.log
+
+# 2. Edge Priors Only (No Deep Supervision)
+echo "Training Edge Only..."
+python train_sota_polyp.py --run_name ablation_edge --no_deep_sup --epochs 50 > ablation_logs/train_edge.log
+echo "Evaluating Edge Only..."
+python test_pranet_split.py --run_name ablation_edge --no_deep_sup > ablation_logs/test_edge.log
+
+# 3. Deep Supervision Only (No Edge Priors)
+echo "Training Deep Sup Only..."
+python train_sota_polyp.py --run_name ablation_deepsup --no_boundary --epochs 50 > ablation_logs/train_deepsup.log
+echo "Evaluating Deep Sup Only..."
+python test_pranet_split.py --run_name ablation_deepsup --no_boundary > ablation_logs/test_deepsup.log
+
+# 4. Full Model (B-Mamba)
+echo "Training Full Model..."
+python train_sota_polyp.py --run_name ablation_full --epochs 50 > ablation_logs/train_full.log
+echo "Evaluating Full Model..."
+python test_pranet_split.py --run_name ablation_full > ablation_logs/test_full.log
+
+echo "Ablation Pipeline Complete! Check the ablation_logs/ directory for results."

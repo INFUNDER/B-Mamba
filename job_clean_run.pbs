@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=32GB:ngpus=1
+#PBS -q gpu
+#PBS -l walltime=12:00:00
+# One (config, seed) run on the LEAK-FREE official PraNet split.
+# Submitted by submit_clean_pipeline.sh with:  -v CFG=<full|baseline|edge|deepsup>,SEED=<int>
+
+cd $PBS_O_WORKDIR
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+mkdir -p clean_logs results_json
+
+case "$CFG" in
+  full)     FLAGS="" ;;
+  baseline) FLAGS="--no_deep_sup --no_boundary" ;;
+  edge)     FLAGS="--no_deep_sup" ;;
+  deepsup)  FLAGS="--no_boundary" ;;
+  *) echo "Unknown CFG=$CFG"; exit 1 ;;
+esac
+
+RUN="clean_${CFG}_s${SEED}"
+echo "[$(date)] Training $RUN ($FLAGS)"
+python train_sota_polyp.py --run_name "$RUN" $FLAGS --epochs 100 --seed "$SEED" \
+       --train_root dataset/PraNet_Official/TrainDataset > "clean_logs/train_${RUN}.log" 2>&1
+
+echo "[$(date)] Evaluating $RUN"
+python eval_full_metrics.py --run_name "$RUN" $FLAGS > "clean_logs/eval_${RUN}.log" 2>&1
+
+if [ "$CFG" = "full" ] && [ "$SEED" = "42" ]; then
+  echo "[$(date)] Speed benchmark + Delta analysis"
+  python benchmark_speed.py > clean_logs/speed.log 2>&1
+  python analyze_delta.py --run_name "$RUN" > clean_logs/delta_analysis_full.log 2>&1
+fi
+if [ "$CFG" = "deepsup" ] && [ "$SEED" = "42" ]; then
+  # Counterfactual: same model without boundary conditioning
+  python analyze_delta.py --run_name "$RUN" --no_boundary > clean_logs/delta_analysis_noboundary.log 2>&1
+fi
+echo "[$(date)] Done $RUN"

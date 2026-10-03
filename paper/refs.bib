@@ -1,0 +1,423 @@
+% =====================================================================
+% References for B-Mamba. All entries are real publications; please
+% double-check page numbers / volumes against the publisher before
+% submission (journals are strict about this).
+% =====================================================================
+
+% ---------------- Clinical background ----------------
+@article{siegel2024cancer,
+  author  = {Siegel, Rebecca L. and Giaquinto, Angela N. and Jemal, Ahmedin},
+  title   = {Cancer statistics, 2024},
+  journal = {CA: A Cancer Journal for Clinicians},
+  volume  = {74},
+  number  = {1},
+  pages   = {12--49},
+  year    = {2024}
+}
+@article{vanrijn2006polyp,
+  author  = {van Rijn, Jeroen C. and Reitsma, Johannes B. and Stoker, Jaap and Bossuyt, Patrick M. and van Deventer, Sander J. and Dekker, Evelien},
+  title   = {Polyp miss rate determined by tandem colonoscopy: a systematic review},
+  journal = {The American Journal of Gastroenterology},
+  volume  = {101},
+  number  = {2},
+  pages   = {343--350},
+  year    = {2006}
+}
+@article{corley2014adenoma,
+  author  = {Corley, Douglas A. and Jensen, Christopher D. and Marks, Amy R. and Zhao, Wei K. and Lee, Jeffrey K. and Doubeni, Chyke A. and Zauber, Ann G. and de Boer, Jolanda and Fireman, Bruce H. and Schottinger, Joanne E. and others},
+  title   = {Adenoma detection rate and risk of colorectal cancer and death},
+  journal = {New England Journal of Medicine},
+  volume  = {370},
+  number  = {14},
+  pages   = {1298--1306},
+  year    = {2014}
+}
+
+% ---------------- CNN segmentation ----------------
+@inproceedings{ronneberger2015unet,
+  author    = {Ronneberger, Olaf and Fischer, Philipp and Brox, Thomas},
+  title     = {{U-Net}: Convolutional networks for biomedical image segmentation},
+  booktitle = {Proc. Int. Conf. Med. Image Comput. Comput.-Assist. Intervent. (MICCAI)},
+  pages     = {234--241},
+  year      = {2015}
+}
+@inproceedings{zhou2018unetpp,
+  author    = {Zhou, Zongwei and Siddiquee, Md Mahfuzur Rahman and Tajbakhsh, Nima and Liang, Jianming},
+  title     = {{UNet++}: A nested {U-Net} architecture for medical image segmentation},
+  booktitle = {Proc. Deep Learn. Med. Image Anal. Multimodal Learn. Clin. Decis. Support (DLMIA)},
+  pages     = {3--11},
+  year      = {2018}
+}
+@inproceedings{fang2019sfa,
+  author    = {Fang, Yuqi and Chen, Cheng and Yuan, Yixuan and Tong, Kai-yu},
+  title     = {Selective feature aggregation network with area-boundary constraints for polyp segmentation},
+  booktitle = {Proc. MICCAI},
+  pages     = {302--310},
+  year      = {2019}
+}
+@inproceedings{fan2020pranet,
+  author    = {Fan, Deng-Ping and Ji, Ge-Peng and Zhou, Tao and Chen, Geng and Fu, Huazhu and Shen, Jianbing and Shao, Ling},
+  title     = {{PraNet}: Parallel reverse attention network for polyp segmentation},
+  booktitle = {Proc. MICCAI},
+  pages     = {263--273},
+  year      = {2020}
+}
+@inproceedings{zhang2020acsnet,
+  author    = {Zhang, Ruifei and Li, Guanbin and Li, Zhen and Cui, Shuguang and Qian, Dahong and Yu, Yizhou},
+  title     = {Adaptive context selection for polyp segmentation},
+  booktitle = {Proc. MICCAI},
+  pages     = {253--262},
+  year      = {2020}
+}
+@inproceedings{wei2021sanet,
+  author    = {Wei, Jun and Hu, Yiwen and Zhang, Ruimao and Li, Zhen and Zhou, S. Kevin and Cui, Shuguang},
+  title     = {Shallow attention network for polyp segmentation},
+  booktitle = {Proc. MICCAI},
+  pages     = {699--708},
+  year      = {2021}
+}
+@inproceedings{zhao2021msnet,
+  author    = {Zhao, Xiaoqi and Zhang, Lihe and Lu, Huchuan},
+  title     = {Automatic polyp segmentation via multi-scale subtraction network},
+  booktitle = {Proc. MICCAI},
+  pages     = {120--130},
+  year      = {2021}
+}
+@article{huang2021hardnet,
+  author  = {Huang, Chien-Hsiang and Wu, Hung-Yu and Lin, Youn-Long},
+  title   = {{HarDNet-MSEG}: A simple encoder-decoder polyp segmentation neural network that achieves over 0.9 mean dice and 86 {FPS}},
+  journal = {arXiv preprint arXiv:2101.07172},
+  year    = {2021}
+}
+@inproceedings{lou2022caranet,
+  author    = {Lou, Ange and Guan, Shuyue and Ko, Hanseok and Loew, Murray H.},
+  title     = {{CaraNet}: Context axial reverse attention network for segmentation of small medical objects},
+  booktitle = {Proc. SPIE Medical Imaging 2022: Image Processing},
+  volume    = {12032},
+  pages     = {81--92},
+  year      = {2022}
+}
+@inproceedings{bui2024meganet,
+  author    = {Bui, Nhat-Tan and Hoang, Dinh-Hieu and Nguyen, Quang-Thuc and Tran, Minh-Triet and Le, Ngan},
+  title     = {{MEGANet}: Multi-scale edge-guided attention network for weak boundary polyp segmentation},
+  booktitle = {Proc. IEEE/CVF Winter Conf. Appl. Comput. Vis. (WACV)},
+  pages     = {7985--7994},
+  year      = {2024}
+}
+
+% ---------------- Transformers ----------------
+@inproceedings{dosovitskiy2021vit,
+  author    = {Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and Uszkoreit, Jakob and Houlsby, Neil},
+  title     = {An image is worth 16x16 words: Transformers for image recognition at scale},
+  booktitle = {Proc. Int. Conf. Learn. Represent. (ICLR)},
+  year      = {2021}
+}
+@inproceedings{liu2021swin,
+  author    = {Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
+  title     = {Swin {Transformer}: Hierarchical vision transformer using shifted windows},
+  booktitle = {Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)},
+  pages     = {10012--10022},
+  year      = {2021}
+}
+@inproceedings{wang2021pvt,
+  author    = {Wang, Wenhai and Xie, Enze and Li, Xiang and Fan, Deng-Ping and Song, Kaitao and Liang, Ding and Lu, Tong and Luo, Ping and Shao, Ling},
+  title     = {Pyramid vision transformer: A versatile backbone for dense prediction without convolutions},
+  booktitle = {Proc. IEEE/CVF ICCV},
+  pages     = {568--578},
+  year      = {2021}
+}
+@article{chen2021transunet,
+  author  = {Chen, Jieneng and Lu, Yongyi and Yu, Qihang and Luo, Xiangde and Adeli, Ehsan and Wang, Yan and Lu, Le and Yuille, Alan L. and Zhou, Yuyin},
+  title   = {{TransUNet}: Transformers make strong encoders for medical image segmentation},
+  journal = {arXiv preprint arXiv:2102.04306},
+  year    = {2021}
+}
+@inproceedings{cao2022swinunet,
+  author    = {Cao, Hu and Wang, Yueyue and Chen, Joy and Jiang, Dongsheng and Zhang, Xiaopeng and Tian, Qi and Wang, Manning},
+  title     = {{Swin-Unet}: Unet-like pure transformer for medical image segmentation},
+  booktitle = {Proc. Eur. Conf. Comput. Vis. Workshops (ECCVW)},
+  pages     = {205--218},
+  year      = {2022}
+}
+@article{dong2023polyppvt,
+  author  = {Dong, Bo and Wang, Wenhai and Fan, Deng-Ping and Li, Jinpeng and Fu, Huazhu and Shao, Ling},
+  title   = {{Polyp-PVT}: Polyp segmentation with pyramid vision transformers},
+  journal = {CAAI Artificial Intelligence Research},
+  volume  = {2},
+  pages   = {9150015},
+  year    = {2023}
+}
+@inproceedings{wang2022ssformer,
+  author    = {Wang, Jinfeng and Huang, Qiming and Tang, Feilong and Meng, Jia and Su, Jionglong and Song, Sifan},
+  title     = {Stepwise feature fusion: Local guides global},
+  booktitle = {Proc. MICCAI},
+  pages     = {110--120},
+  year      = {2022}
+}
+@inproceedings{katharopoulos2020linear,
+  author    = {Katharopoulos, Angelos and Vyas, Apoorv and Pappas, Nikolaos and Fleuret, Fran{\c{c}}ois},
+  title     = {Transformers are {RNNs}: Fast autoregressive transformers with linear attention},
+  booktitle = {Proc. Int. Conf. Mach. Learn. (ICML)},
+  pages     = {5156--5165},
+  year      = {2020}
+}
+
+% ---------------- State space models ----------------
+@inproceedings{gu2020hippo,
+  author    = {Gu, Albert and Dao, Tri and Ermon, Stefano and Rudra, Atri and R{\'e}, Christopher},
+  title     = {{HiPPO}: Recurrent memory with optimal polynomial projections},
+  booktitle = {Proc. Adv. Neural Inf. Process. Syst. (NeurIPS)},
+  pages     = {1474--1487},
+  year      = {2020}
+}
+@inproceedings{gu2022s4,
+  author    = {Gu, Albert and Goel, Karan and R{\'e}, Christopher},
+  title     = {Efficiently modeling long sequences with structured state spaces},
+  booktitle = {Proc. ICLR},
+  year      = {2022}
+}
+@inproceedings{gu2022s4d,
+  author    = {Gu, Albert and Gupta, Ankit and Goel, Karan and R{\'e}, Christopher},
+  title     = {On the parameterization and initialization of diagonal state space models},
+  booktitle = {Proc. NeurIPS},
+  pages     = {35971--35983},
+  year      = {2022}
+}
+@article{gu2023mamba,
+  author  = {Gu, Albert and Dao, Tri},
+  title   = {Mamba: Linear-time sequence modeling with selective state spaces},
+  journal = {arXiv preprint arXiv:2312.00752},
+  year    = {2023}
+}
+@inproceedings{dao2024mamba2,
+  author    = {Dao, Tri and Gu, Albert},
+  title     = {Transformers are {SSMs}: Generalized models and efficient algorithms through structured state space duality},
+  booktitle = {Proc. ICML},
+  year      = {2024}
+}
+@article{ali2024hidden,
+  author  = {Ali, Ameen and Zimerman, Itamar and Wolf, Lior},
+  title   = {The hidden attention of {Mamba} models},
+  journal = {arXiv preprint arXiv:2403.01590},
+  year    = {2024}
+}
+@inproceedings{zhu2024vim,
+  author    = {Zhu, Lianghui and Liao, Bencheng and Zhang, Qian and Wang, Xinlong and Liu, Wenyu and Wang, Xinggang},
+  title     = {Vision {Mamba}: Efficient visual representation learning with bidirectional state space model},
+  booktitle = {Proc. ICML},
+  year      = {2024}
+}
+@inproceedings{liu2024vmamba,
+  author    = {Liu, Yue and Tian, Yunjie and Zhao, Yuzhong and Yu, Hongtian and Xie, Lingxi and Wang, Yaowei and Ye, Qixiang and Jiao, Jianbin and Liu, Yunfan},
+  title     = {{VMamba}: Visual state space model},
+  booktitle = {Proc. NeurIPS},
+  year      = {2024}
+}
+
+% ---------------- Mamba for medical segmentation ----------------
+@article{ma2024umamba,
+  author  = {Ma, Jun and Li, Feifei and Wang, Bo},
+  title   = {{U-Mamba}: Enhancing long-range dependency for biomedical image segmentation},
+  journal = {arXiv preprint arXiv:2401.04722},
+  year    = {2024}
+}
+@article{ruan2024vmunet,
+  author  = {Ruan, Jiacheng and Li, Jincheng and Xiang, Suncheng},
+  title   = {{VM-UNet}: Vision {Mamba} {UNet} for medical image segmentation},
+  journal = {arXiv preprint arXiv:2402.02491},
+  year    = {2024}
+}
+@article{zhang2024vmunetv2,
+  author  = {Zhang, Mingya and Yu, Yue and Jin, Sun and Gu, Limei and Ling, Tingsheng and Tao, Xianping},
+  title   = {{VM-UNet-V2}: Rethinking vision {Mamba} {UNet} for medical image segmentation},
+  journal = {arXiv preprint arXiv:2403.09157},
+  year    = {2024}
+}
+@inproceedings{liu2024swinumamba,
+  author    = {Liu, Jiarun and Yang, Hao and Zhou, Hong-Yu and Xi, Yan and Yu, Lequan and Li, Cheng and Liang, Yong and Shi, Guangming and Yu, Yizhou and Zhang, Shaoting and Zheng, Hairong and Wang, Shanshan},
+  title     = {{Swin-UMamba}: {Mamba}-based {UNet} with {ImageNet}-based pretraining},
+  booktitle = {Proc. MICCAI},
+  pages     = {615--625},
+  year      = {2024}
+}
+@inproceedings{xing2024segmamba,
+  author    = {Xing, Zhaohu and Ye, Tian and Yang, Yijun and Liu, Guang and Zhu, Lei},
+  title     = {{SegMamba}: Long-range sequential modeling {Mamba} for {3D} medical image segmentation},
+  booktitle = {Proc. MICCAI},
+  pages     = {578--588},
+  year      = {2024}
+}
+@article{wang2024mambaunet,
+  author  = {Wang, Ziyang and Zheng, Jian-Qing and Zhang, Yichi and Cui, Ge and Li, Lei},
+  title   = {{Mamba-UNet}: {UNet}-like pure visual {Mamba} for medical image segmentation},
+  journal = {arXiv preprint arXiv:2402.05079},
+  year    = {2024}
+}
+@article{liao2024lightmunet,
+  author  = {Liao, Weibin and Zhu, Yinghao and Wang, Xinyuan and Pan, Chengwei and Wang, Yasha and Ma, Liantao},
+  title   = {{LightM-UNet}: {Mamba} assists in lightweight {UNet} for medical image segmentation},
+  journal = {arXiv preprint arXiv:2403.05246},
+  year    = {2024}
+}
+@inproceedings{xu2024polypmamba,
+  author    = {Xu, Zhongxing and Tang, Feilong and Chen, Zhe and Zhou, Zheng and Wu, Weishan and Yang, Yuyao and Liang, Yu and Jiang, Jiyu and Cai, Xuyue and Su, Jionglong},
+  title     = {{Polyp-Mamba}: Polyp segmentation with visual {Mamba}},
+  booktitle = {Proc. MICCAI},
+  pages     = {510--521},
+  year      = {2024}
+}
+@article{xie2024promamba,
+  author  = {Xie, Jianhao and Liao, Ruofan and Zhang, Ziang and Yi, Sida and Zhu, Yuesheng and Luo, Guibo},
+  title   = {{ProMamba}: Prompt-{Mamba} for polyp segmentation},
+  journal = {arXiv preprint arXiv:2403.13660},
+  year    = {2024}
+}
+
+% ---------------- Building blocks / edges / losses ----------------
+@inproceedings{lin2017fpn,
+  author    = {Lin, Tsung-Yi and Doll{\'a}r, Piotr and Girshick, Ross and He, Kaiming and Hariharan, Bharath and Belongie, Serge},
+  title     = {Feature pyramid networks for object detection},
+  booktitle = {Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)},
+  pages     = {2117--2125},
+  year      = {2017}
+}
+@article{chen2018deeplab,
+  author  = {Chen, Liang-Chieh and Papandreou, George and Kokkinos, Iasonas and Murphy, Kevin and Yuille, Alan L.},
+  title   = {{DeepLab}: Semantic image segmentation with deep convolutional nets, atrous convolution, and fully connected {CRFs}},
+  journal = {IEEE Trans. Pattern Anal. Mach. Intell.},
+  volume  = {40},
+  number  = {4},
+  pages   = {834--848},
+  year    = {2018}
+}
+@inproceedings{lee2015dsn,
+  author    = {Lee, Chen-Yu and Xie, Saining and Gallagher, Patrick and Zhang, Zhengyou and Tu, Zhuowen},
+  title     = {Deeply-supervised nets},
+  booktitle = {Proc. Int. Conf. Artif. Intell. Statist. (AISTATS)},
+  pages     = {562--570},
+  year      = {2015}
+}
+@inproceedings{xie2015hed,
+  author    = {Xie, Saining and Tu, Zhuowen},
+  title     = {Holistically-nested edge detection},
+  booktitle = {Proc. IEEE ICCV},
+  pages     = {1395--1403},
+  year      = {2015}
+}
+@incollection{sobel1990isotropic,
+  author    = {Sobel, Irwin},
+  title     = {An isotropic 3$\times$3 image gradient operator},
+  booktitle = {Machine Vision for Three-Dimensional Scenes},
+  publisher = {Academic Press},
+  pages     = {376--379},
+  year      = {1990}
+}
+@article{perona1990anisotropic,
+  author  = {Perona, Pietro and Malik, Jitendra},
+  title   = {Scale-space and edge detection using anisotropic diffusion},
+  journal = {IEEE Trans. Pattern Anal. Mach. Intell.},
+  volume  = {12},
+  number  = {7},
+  pages   = {629--639},
+  year    = {1990}
+}
+@inproceedings{tomasi1998bilateral,
+  author    = {Tomasi, Carlo and Manduchi, Roberto},
+  title     = {Bilateral filtering for gray and color images},
+  booktitle = {Proc. IEEE ICCV},
+  pages     = {839--846},
+  year      = {1998}
+}
+@inproceedings{perez2018film,
+  author    = {Perez, Ethan and Strub, Florian and de Vries, Harm and Dumoulin, Vincent and Courville, Aaron},
+  title     = {{FiLM}: Visual reasoning with a general conditioning layer},
+  booktitle = {Proc. AAAI Conf. Artif. Intell.},
+  pages     = {3942--3951},
+  year      = {2018}
+}
+@inproceedings{wei2020f3net,
+  author    = {Wei, Jun and Wang, Shuhui and Huang, Qingming},
+  title     = {{F$^3$Net}: Fusion, feedback and focus for salient object detection},
+  booktitle = {Proc. AAAI Conf. Artif. Intell.},
+  pages     = {12321--12328},
+  year      = {2020}
+}
+@article{kervadec2021boundary,
+  author  = {Kervadec, Hoel and Bouchtiba, Jihene and Desrosiers, Christian and Granger, Eric and Dolz, Jose and Ben Ayed, Ismail},
+  title   = {Boundary loss for highly unbalanced segmentation},
+  journal = {Medical Image Analysis},
+  volume  = {67},
+  pages   = {101851},
+  year    = {2021}
+}
+@inproceedings{cheng2021boundaryiou,
+  author    = {Cheng, Bowen and Girshick, Ross and Doll{\'a}r, Piotr and Berg, Alexander C. and Kirillov, Alexander},
+  title     = {Boundary {IoU}: Improving object-centric image segmentation evaluation},
+  booktitle = {Proc. IEEE/CVF CVPR},
+  pages     = {15334--15342},
+  year      = {2021}
+}
+
+% ---------------- Datasets ----------------
+@inproceedings{jha2020kvasir,
+  author    = {Jha, Debesh and Smedsrud, Pia H. and Riegler, Michael A. and Halvorsen, P{\aa}l and de Lange, Thomas and Johansen, Dag and Johansen, H{\aa}vard D.},
+  title     = {{Kvasir-SEG}: A segmented polyp dataset},
+  booktitle = {Proc. Int. Conf. Multimedia Modeling (MMM)},
+  pages     = {451--462},
+  year      = {2020}
+}
+@article{bernal2015clinicdb,
+  author  = {Bernal, Jorge and S{\'a}nchez, F. Javier and Fern{\'a}ndez-Esparrach, Gloria and Gil, Debora and Rodr{\'i}guez, Cristina and Vilari{\~n}o, Fernando},
+  title   = {{WM-DOVA} maps for accurate polyp highlighting in colonoscopy: Validation vs. saliency maps from physicians},
+  journal = {Computerized Medical Imaging and Graphics},
+  volume  = {43},
+  pages   = {99--111},
+  year    = {2015}
+}
+@article{tajbakhsh2016colondb,
+  author  = {Tajbakhsh, Nima and Gurudu, Suryakanth R. and Liang, Jianming},
+  title   = {Automated polyp detection in colonoscopy videos using shape and context information},
+  journal = {IEEE Trans. Med. Imag.},
+  volume  = {35},
+  number  = {2},
+  pages   = {630--644},
+  year    = {2016}
+}
+@article{silva2014etis,
+  author  = {Silva, Juan and Histace, Aymeric and Romain, Olivier and Dray, Xavier and Granado, Bertrand},
+  title   = {Toward embedded detection of polyps in {WCE} images for early diagnosis of colorectal cancer},
+  journal = {Int. J. Comput. Assist. Radiol. Surg.},
+  volume  = {9},
+  number  = {2},
+  pages   = {283--293},
+  year    = {2014}
+}
+@article{vazquez2017endoscene,
+  author  = {V{\'a}zquez, David and Bernal, Jorge and S{\'a}nchez, F. Javier and Fern{\'a}ndez-Esparrach, Gloria and L{\'o}pez, Antonio M. and Romero, Adriana and Drozdzal, Michal and Courville, Aaron},
+  title   = {A benchmark for endoluminal scene segmentation of colonoscopy images},
+  journal = {Journal of Healthcare Engineering},
+  volume  = {2017},
+  pages   = {4037190},
+  year    = {2017}
+}
+
+% ---------------- Training ----------------
+@inproceedings{loshchilov2019adamw,
+  author    = {Loshchilov, Ilya and Hutter, Frank},
+  title     = {Decoupled weight decay regularization},
+  booktitle = {Proc. ICLR},
+  year      = {2019}
+}
+@inproceedings{loshchilov2017sgdr,
+  author    = {Loshchilov, Ilya and Hutter, Frank},
+  title     = {{SGDR}: Stochastic gradient descent with warm restarts},
+  booktitle = {Proc. ICLR},
+  year      = {2017}
+}
+@inproceedings{paszke2019pytorch,
+  author    = {Paszke, Adam and Gross, Sam and Massa, Francisco and Lerer, Adam and Bradbury, James and Chanan, Gregory and Killeen, Trevor and Lin, Zeming and Gimelshein, Natalia and Antiga, Luca and others},
+  title     = {{PyTorch}: An imperative style, high-performance deep learning library},
+  booktitle = {Proc. NeurIPS},
+  pages     = {8024--8035},
+  year      = {2019}
+}
