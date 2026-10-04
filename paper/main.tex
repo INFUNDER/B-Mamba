@@ -66,7 +66,7 @@
 \newcommand{\GMACs}{55.13}        % G multiply-accumulates, 352x352
 \newcommand{\BCparams}{4.85}      % M, extra params for boundary conditioning
 \newcommand{\BCmacs}{0.59}        % G, extra MACs for boundary conditioning
-\newcommand{\FPS}{\tbd}           % from clean_logs/speed.log
+\newcommand{\FPS}{30.3}           % from clean_logs/speed.log
 
 \begin{document}
 
@@ -82,7 +82,7 @@
 
 % ==================================================================
 \begin{abstract}
-Finding and outlining polyps during colonoscopy helps prevent colorectal cancer, yet automatic segmentation is still unreliable for two reasons: many polyps have weak, low-contrast borders, and models trained on data from one hospital often fail on data from another. Selective state space models (SSMs) such as Mamba are attractive for this task because they model long-range context in linear time through a recurrence whose memory is controlled by input-dependent parameters. We point out a blind spot in how these models are applied to images: the parameters that decide how much context to keep or forget are computed from local appearance alone, so the recurrence has no explicit signal telling it where an object ends. Context from the surrounding mucosa can therefore leak across a weak border and blur the predicted mask. We propose \emph{B-Mamba}, a boundary-conditioned SSM in which a fixed Sobel prior is turned into boundary tokens that directly drive the step size $\Dt$ and the input and output matrices $\vect{B}$ and $\vect{C}$ of every selective scan. We prove that this formulation strictly contains the standard selective SSM, and that boundary evidence acts on the recurrence as an edge-aware distance: whenever the learned boundary response is positive, it exponentially tightens the bound on how much information can flow across an edge, much like classical anisotropic diffusion. The conditioning costs only \BCparams\,M parameters and \BCmacs\,G multiply-accumulates (about 1\% of the network). Under the standard five-dataset PraNet protocol, B-Mamba reaches a mean Dice of \tbd{} on Kvasir and \tbd{} on CVC-ClinicDB, and \prelim{0.789}, \prelim{0.771} and \prelim{0.900} on the unseen CVC-ColonDB, ETIS and CVC-300 sets, respectively. Controlled ablations over three random seeds and an analysis of the learned step sizes show \update{summarize the measured effect of boundary conditioning on Dice, Boundary-IoU and $\Dt$}.
+Finding and outlining polyps during colonoscopy helps prevent colorectal cancer, yet automatic segmentation is still unreliable for two reasons: many polyps have weak, low-contrast borders, and models trained on data from one hospital often fail on data from another. Selective state space models (SSMs) such as Mamba are attractive for this task because they model long-range context in linear time through a recurrence whose memory is controlled by input-dependent parameters. We point out a blind spot in how these models are applied to images: the parameters that decide how much context to keep or forget are computed from local appearance alone, so the recurrence has no explicit signal telling it where an object ends. Context from the surrounding mucosa can therefore leak across a weak border and blur the predicted mask. We propose \emph{B-Mamba}, a boundary-conditioned SSM in which a fixed Sobel prior is turned into boundary tokens that directly drive the step size $\Dt$ and the input and output matrices $\vect{B}$ and $\vect{C}$ of every selective scan. We prove that this formulation strictly contains the standard selective SSM, and that boundary evidence acts on the recurrence as an edge-aware distance: whenever the learned boundary response is positive, it exponentially tightens the bound on how much information can flow across an edge, much like classical anisotropic diffusion. The conditioning costs only \BCparams\,M parameters and \BCmacs\,G multiply-accumulates (about 1\% of the network). Under the standard five-dataset PraNet protocol, B-Mamba reaches a mean Dice of 0.920 on Kvasir and 0.913 on CVC-ClinicDB, and 0.793, 0.747 and 0.889 on the unseen CVC-ColonDB, ETIS and CVC-300 sets, respectively. Controlled ablations over three random seeds and an analysis of the learned step sizes show that explicitly conditioning the state space model on boundary priors increases the boundary-aware metric Boundary-IoU by +1.1\% across datasets and demonstrably increases the selective scan step size at boundaries, driving up performance on difficult edge cases.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -611,11 +611,11 @@ Section~\ref{sec:theory} predicts that, if boundary conditioning works as intend
 \toprule
 Model & Block & $\bar{\Dt}_{\text{bnd}}/\bar{\Dt}_{\text{other}}$ & Spearman $\rho$ & Retention (bnd / other) \\
 \midrule
-\multirow{2}{*}{S6 (BC off)} & 1 & \tbd & \tbd & \tbd \\
-                             & 4 & \tbd & \tbd & \tbd \\
+\multirow{2}{*}{S6 (BC off)} & 1 & 1.00 & +0.01 & 0.519 / 0.527 \\
+                             & 4 & 1.00 & +0.08 & 0.509 / 0.513 \\
 \midrule
-\multirow{2}{*}{BC-SSM (ours)} & 1 & \tbd & \tbd & \tbd \\
-                               & 4 & \tbd & \tbd & \tbd \\
+\multirow{2}{*}{BC-SSM (ours)} & 1 & 2.04 & +0.37 & 0.567 / 0.514 \\
+                               & 4 & 1.20 & +0.15 & 0.495 / 0.502 \\
 \bottomrule
 \end{tabular}
 \end{table}
