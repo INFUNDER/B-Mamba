@@ -29,7 +29,7 @@ def visualize():
     for name, img_root, gt_root in datasets:
         dataset = PolypDataset(img_root, gt_root, trainsize=352)
         # Select 2 images from each dataset
-        for idx in [5, 12]:
+        for idx in [20, 25]:
             img, gt = dataset[idx]
             samples.append((name, img, gt))
             
