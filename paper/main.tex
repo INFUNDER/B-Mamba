@@ -689,7 +689,7 @@ Inference speed (FPS)                   & \FPS \\
 \IfFileExists{figures/qualitative.png}{%
   \includegraphics[width=\textwidth]{figures/qualitative.png}}{%
   \fbox{\parbox[c][5cm][c]{0.95\textwidth}{\centering\textcolor{red}{Qualitative comparison on test images (Image / GT / Polyp-PVT / S6 variant / B-Mamba), with weak-boundary cases from ColonDB and ETIS.\\Use test-set images only.}}}}
-\caption{Qualitative comparison on challenging test images with weak boundaries, small polyps and specular highlights. Green: ground-truth contour; red: prediction.}
+\caption{Qualitative comparison on challenging test images with weak boundaries from the unseen CVC-ColonDB and ETIS datasets. Columns show the original image, ground truth mask, prediction without boundary conditioning (S6 variant), and prediction from our proposed B-Mamba model.}
 \label{fig:qual}
 \end{figure*}
 
