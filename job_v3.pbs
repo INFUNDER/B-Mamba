@@ -1,0 +1,27 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=48GB:ngpus=1
+#PBS -q gpu
+#PBS -l walltime=24:00:00
+# B-Mamba v3 run (supervised boundary head + two-scale BC-SSM).
+#   qsub -N v3_full_42 -v CFG=full,SEED=42 job_v3.pbs
+#   CFG=full     -> boundary tokens condition the SSMs
+#   CFG=control  -> identical architecture + edge loss, conditioning zeroed (exact S6)
+cd $PBS_O_WORKDIR
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+mkdir -p v2_logs results_json
+
+case "$CFG" in
+  full)    FLAGS="" ;;
+  control) FLAGS="--no_boundary" ;;
+  *) echo "Unknown CFG=$CFG"; exit 1 ;;
+esac
+RUN="v3_${CFG}_s${SEED}"
+
+echo "[$(date)] Training $RUN"
+python train_v2.py --arch v3 --run_name "$RUN" $FLAGS --strong_aug --epochs 100 --seed "$SEED" \
+       > "v2_logs/train_${RUN}.log" 2>&1
+echo "[$(date)] Evaluating $RUN"
+python eval_full_metrics.py --arch v3 --run_name "$RUN" $FLAGS > "v2_logs/eval_${RUN}.log" 2>&1
+python eval_full_metrics.py --arch v3 --run_name "$RUN" $FLAGS --tta --tag _tta > "v2_logs/eval_${RUN}_tta.log" 2>&1
+echo "[$(date)] Done $RUN"

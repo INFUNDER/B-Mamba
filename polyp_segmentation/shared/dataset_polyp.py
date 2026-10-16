@@ -6,9 +6,11 @@ import torchvision.transforms.functional as TF
 from PIL import Image
 
 class PolypDataset(Dataset):
-    def __init__(self, image_root, gt_root, trainsize=352, is_train=True):
+    def __init__(self, image_root, gt_root, trainsize=352, is_train=True, strong_aug=False):
         self.trainsize = trainsize
         self.is_train = is_train
+        self.strong_aug = strong_aug and is_train
+        self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.05)
         # Filter out non-image files like .DS_Store
         self.images = [os.path.join(image_root, f) for f in os.listdir(image_root) if f.endswith(('.jpg', '.png', '.jpeg'))]
         self.gts = [os.path.join(gt_root, f) for f in os.listdir(gt_root) if f.endswith(('.jpg', '.png', '.jpeg'))]
@@ -45,11 +47,31 @@ class PolypDataset(Dataset):
                 angle = random.choice([90, 180, 270])
                 image = TF.rotate(image, angle)
                 gt = TF.rotate(gt, angle)
+            if self.strong_aug:
+                image, gt = self._strong_aug(image, gt)
                 
         image = TF.to_tensor(image)
         image = TF.normalize(image, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         gt = TF.to_tensor(gt)
         
+        return image, gt
+
+    def _strong_aug(self, image, gt):
+        # Appearance: simulates different scopes / lighting (helps unseen domains)
+        if random.random() < 0.8:
+            image = self.color_jitter(image)
+        if random.random() < 0.2:
+            image = TF.gaussian_blur(image, kernel_size=5, sigma=random.uniform(0.1, 1.5))
+        # Geometry: random scale + translation + small rotation (zoom in/out on polyps)
+        if random.random() < 0.7:
+            s = self.trainsize
+            angle = random.uniform(-25, 25)
+            translate = (int(random.uniform(-0.1, 0.1) * s), int(random.uniform(-0.1, 0.1) * s))
+            scale = random.uniform(0.75, 1.35)
+            image = TF.affine(image, angle=angle, translate=translate, scale=scale, shear=0.0,
+                              interpolation=TF.InterpolationMode.BILINEAR)
+            gt = TF.affine(gt, angle=angle, translate=translate, scale=scale, shear=0.0,
+                           interpolation=TF.InterpolationMode.NEAREST)
         return image, gt
 
     def rgb_loader(self, path):

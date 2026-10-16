@@ -22,6 +22,7 @@ from PIL import Image
 from scipy.ndimage import binary_erosion, distance_transform_edt
 
 from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel_Pro
+from polyp_segmentation.b_mamba.b_mamba_v3 import BMambaModelV3
 
 TEST_SETS = [
     ('Kvasir', 'dataset/TestDataset/Kvasir'),
@@ -41,7 +42,10 @@ def parse_args():
     p.add_argument('--no_deep_sup', action='store_true')
     p.add_argument('--no_boundary', action='store_true')
     p.add_argument('--img_size', type=int, default=352)
+    p.add_argument('--arch', choices=['pro', 'v3'], default='pro')
     p.add_argument('--out_dir', default='results_json')
+    p.add_argument('--tta', action='store_true', help='average over h/v/hv flips')
+    p.add_argument('--tag', default='', help='suffix for the output json (e.g. _tta)')
     return p.parse_args()
 
 
@@ -85,7 +89,7 @@ def hd95(pred, gt):
 
 
 @torch.no_grad()
-def evaluate(model, device, root, img_size):
+def evaluate(model, device, root, img_size, tta=False):
     img_dir, msk_dir = os.path.join(root, 'images'), os.path.join(root, 'masks')
     names = sorted(f for f in os.listdir(img_dir) if f.lower().endswith(EXTS))
     per_img = {'dice': [], 'iou': [], 'mae': [], 'biou': [], 'hd95': []}
@@ -96,7 +100,15 @@ def evaluate(model, device, root, img_size):
 
         x = np.asarray(img.resize((img_size, img_size), Image.BILINEAR), dtype=np.float32) / 255.0
         x = torch.from_numpy(((x - MEAN) / STD).transpose(2, 0, 1)).unsqueeze(0).to(device)
-        logit = model(x)['seg']
+        if tta:
+            logit = 0
+            for dims in ([], [3], [2], [2, 3]):
+                xi = torch.flip(x, dims) if dims else x
+                oi = model(xi)['seg']
+                logit = logit + (torch.flip(oi, dims) if dims else oi)
+            logit = logit / 4
+        else:
+            logit = model(x)['seg']
         prob = torch.sigmoid(F.interpolate(logit, size=gt.shape, mode='bilinear', align_corners=False))
         prob = prob.squeeze().cpu().numpy()
         pred_bin = prob > 0.5
@@ -115,20 +127,21 @@ def main():
     args = parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ckpt = f'polyp_segmentation/checkpoints/b_mamba_best_{args.run_name}.pth'
-    model = BMambaModel_Pro(pretrained=False, img_size=args.img_size,
-                            use_deep_sup=not args.no_deep_sup, use_boundary=not args.no_boundary)
+    Model = BMambaModelV3 if args.arch == 'v3' else BMambaModel_Pro
+    model = Model(pretrained=False, img_size=args.img_size,
+                  use_deep_sup=not args.no_deep_sup, use_boundary=not args.no_boundary)
     model.load_state_dict(torch.load(ckpt, map_location=device))
     model.to(device).eval()
 
     results = {}
     for name, root in TEST_SETS:
-        r = evaluate(model, device, root, args.img_size)
+        r = evaluate(model, device, root, args.img_size, tta=args.tta)
         results[name] = r
         print(f"{name:9s} n={r['n']:3d}  mDice={r['dice']:.4f}  mIoU={r['iou']:.4f}  "
               f"MAE={r['mae']:.4f}  BIoU={r['biou']:.4f}  HD95={r['hd95']:.2f}")
 
     os.makedirs(args.out_dir, exist_ok=True)
-    with open(os.path.join(args.out_dir, f'{args.run_name}.json'), 'w') as f:
+    with open(os.path.join(args.out_dir, f'{args.run_name}{args.tag}.json'), 'w') as f:
         json.dump(results, f, indent=2)
 
 
