@@ -23,6 +23,7 @@ from scipy.ndimage import binary_erosion, distance_transform_edt
 
 from polyp_segmentation.b_mamba.b_mamba_model import BMambaModel_Pro
 from polyp_segmentation.b_mamba.b_mamba_v3 import BMambaModelV3
+from polyp_segmentation.b_mamba.b_mamba_2d import BMamba2D
 
 TEST_SETS = [
     ('Kvasir', 'dataset/TestDataset/Kvasir'),
@@ -41,8 +42,9 @@ def parse_args():
     p.add_argument('--run_name', required=True)
     p.add_argument('--no_deep_sup', action='store_true')
     p.add_argument('--no_boundary', action='store_true')
+    p.add_argument('--no_bpe_bypass', action='store_true')
     p.add_argument('--img_size', type=int, default=352)
-    p.add_argument('--arch', choices=['pro', 'v3'], default='pro')
+    p.add_argument('--arch', choices=['pro', 'v3', '2d'], default='pro')
     p.add_argument('--out_dir', default='results_json')
     p.add_argument('--tta', action='store_true', help='average over h/v/hv flips')
     p.add_argument('--tag', default='', help='suffix for the output json (e.g. _tta)')
@@ -127,9 +129,19 @@ def main():
     args = parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ckpt = f'polyp_segmentation/checkpoints/b_mamba_best_{args.run_name}.pth'
-    Model = BMambaModelV3 if args.arch == 'v3' else BMambaModel_Pro
-    model = Model(pretrained=False, img_size=args.img_size,
-                  use_deep_sup=not args.no_deep_sup, use_boundary=not args.no_boundary)
+    if args.arch == '2d':
+        model = BMamba2D(pretrained=False, img_size=args.img_size,
+                         use_deep_sup=not args.no_deep_sup,
+                         use_boundary=not args.no_boundary,
+                         use_bpe_bypass=not args.no_bpe_bypass)
+    elif args.arch == 'v3':
+        model = BMambaModelV3(pretrained=False, img_size=args.img_size,
+                              use_deep_sup=not args.no_deep_sup,
+                              use_boundary=not args.no_boundary)
+    else:
+        model = BMambaModel_Pro(pretrained=False, img_size=args.img_size,
+                                use_deep_sup=not args.no_deep_sup,
+                                use_boundary=not args.no_boundary)
     model.load_state_dict(torch.load(ckpt, map_location=device))
     model.to(device).eval()
 

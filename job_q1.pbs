@@ -1,0 +1,45 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=32GB:ngpus=1
+#PBS -q gpu
+#PBS -l walltime=04:00:00
+
+# Submit with: qsub -v CFG=<full|bcssm_only|bpe_only|baseline>,SEED=<42|7|2026> job_q1.pbs
+
+cd $PBS_O_WORKDIR
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+mkdir -p q1_logs results_json
+
+case "$CFG" in
+  full)
+    FLAGS=""
+    ;;
+  bcssm_only)
+    FLAGS="--no_bpe_bypass"
+    ;;
+  bpe_only)
+    FLAGS="--no_boundary"
+    ;;
+  baseline)
+    FLAGS="--no_boundary --no_bpe_bypass"
+    ;;
+  *)
+    echo "Unknown CFG=$CFG"; exit 1
+    ;;
+esac
+
+RUN="q1_${CFG}_s${SEED}"
+
+echo "[$(date)] ==================================================="
+echo "[$(date)] Starting training: $RUN (FLAGS: $FLAGS, SEED: $SEED)"
+echo "[$(date)] ==================================================="
+
+python train_q1.py --run_name "$RUN" $FLAGS --seed "$SEED" --epochs 100 \
+       > "q1_logs/train_${RUN}.log" 2>&1
+
+echo "[$(date)] Training complete. Starting evaluation: $RUN"
+
+python eval_full_metrics.py --run_name "$RUN" --arch 2d $FLAGS \
+       > "q1_logs/eval_${RUN}.log" 2>&1
+
+echo "[$(date)] Evaluation complete for $RUN. Results saved to results_json/${RUN}.json"

@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=16GB:ngpus=1
+#PBS -q gpu
+#PBS -l walltime=00:15:00
+
+cd $PBS_O_WORKDIR
+source /home/soft/anaconda3/etc/profile.d/conda.sh
+conda activate cod10
+
+python eval_full_metrics.py --run_name q1_full_s42 --arch 2d --tta --tag _tta > q1_logs/eval_q1_full_s42_tta.log 2>&1
+python eval_full_metrics.py --run_name q1_full_s7 --arch 2d --tta --tag _tta > q1_logs/eval_q1_full_s7_tta.log 2>&1
+python eval_full_metrics.py --run_name q1_full_s2026 --arch 2d --tta --tag _tta > q1_logs/eval_q1_full_s2026_tta.log 2>&1
