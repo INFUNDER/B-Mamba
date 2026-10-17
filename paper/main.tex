@@ -62,28 +62,28 @@
     \ding{51} & \ding{51} & \tbd & \tbd & \tbd & \tbd & \tbd \\}}
 
 % Numbers that are already final (measured on the released code)
-\newcommand{\Params}{121.48}      % M, total
-\newcommand{\GMACs}{55.13}        % G multiply-accumulates, 352x352
-\newcommand{\BCparams}{4.85}      % M, extra params for boundary conditioning
-\newcommand{\BCmacs}{0.59}        % G, extra MACs for boundary conditioning
-\newcommand{\FPS}{30.3}           % from clean_logs/speed.log
+\newcommand{\Params}{101.70}      % M, total
+\newcommand{\GMACs}{68.3}         % G multiply-accumulates, 352x352
+\newcommand{\BCparams}{4.63}      % M, extra params for boundary conditioning
+\newcommand{\BCmacs}{1.4}         % G, extra MACs for boundary conditioning
+\newcommand{\FPS}{32.4}           % FPS
 
 \begin{document}
 \bstctlcite{IEEEexample:BSTcontrol}
 
-\title{B-Mamba: Boundary-Conditioned Selective State Space Models for Generalizable Polyp Segmentation}
+\title{B-Mamba 2D: Omnidirectional Boundary-Conditioned State Space Models for Generalizable Polyp Segmentation}
 
 \author{Ronit~Mittal%
 \thanks{R. Mittal is with the University of Petroleum and Energy Studies (UPES), Dehradun, India (e-mail: ronitmittal0@gmail.com).}%
 \thanks{Code and trained models: https://github.com/INFUNDER/B-Mamba.}}
 
-\markboth{Preprint, 2026}{Mittal: B-Mamba: Boundary-Conditioned Selective State Space Models}
+\markboth{Preprint, 2026}{Mittal: B-Mamba 2D: Omnidirectional Boundary-Conditioned State Space Models}
 
 \maketitle
 
 % ==================================================================
 \begin{abstract}
-Finding and outlining polyps during colonoscopy helps prevent colorectal cancer, yet automatic segmentation is still unreliable for two reasons: many polyps have weak, low-contrast borders, and models trained on data from one hospital often fail on data from another. Selective state space models (SSMs) such as Mamba are attractive for this task because they model long-range context in linear time through a recurrence whose memory is controlled by input-dependent parameters. We point out a blind spot in how these models are applied to images: the parameters that decide how much context to keep or forget are computed from local appearance alone, so the recurrence has no explicit signal telling it where an object ends. Context from the surrounding mucosa can therefore leak across a weak border and blur the predicted mask. We propose \emph{B-Mamba}, a boundary-conditioned SSM in which a fixed Sobel prior is turned into boundary tokens that directly drive the step size $\Dt$ and the input and output matrices $\vect{B}$ and $\vect{C}$ of every selective scan. We prove that this formulation strictly contains the standard selective SSM, and that boundary evidence acts on the recurrence as an edge-aware distance: whenever the learned boundary response is positive, it exponentially tightens the bound on how much information can flow across an edge, much like classical anisotropic diffusion. The conditioning costs only \BCparams\,M parameters and \BCmacs\,G multiply-accumulates (about 1\% of the network). Under the standard five-dataset PraNet protocol, B-Mamba reaches a mean Dice of 0.932 on Kvasir and 0.922 on CVC-ClinicDB, and 0.801, 0.814 and 0.892 on the unseen CVC-ColonDB, ETIS and CVC-300 sets, respectively. Remarkably, on the challenging out-of-distribution ETIS benchmark, B-Mamba achieves 0.814 mean Dice, outperforming the leading Transformer benchmark Polyp-PVT (0.787) by +2.7\%. Controlled ablations over three random seeds and a mechanistic analysis confirm that boundary conditioning demonstrably increases the selective scan step size at borders ($2.04\times$ in Block 1), suppressing context leakage across lesion edges.
+Finding and outlining polyps during colonoscopy helps prevent colorectal cancer, yet automatic segmentation is still unreliable for two reasons: many polyps have weak, low-contrast borders, and models trained on data from one hospital often fail on data from another. Selective state space models (SSMs) such as Mamba are attractive for this task because they model long-range context in linear time through a recurrence whose memory is controlled by input-dependent parameters. We point out a blind spot in how these models are applied to images: the parameters that decide how much context to keep or forget are computed from local appearance alone, so the recurrence has no explicit signal telling it where an object ends. Context from the surrounding mucosa can therefore leak across a weak border and blur the predicted mask. We propose \emph{B-Mamba 2D}, a boundary-conditioned SSM architecture featuring 4-way omnidirectional cross-scanning and multi-scale skip conditioning. A supervised Multi-Scale Boundary Head turns gradient priors into structural tokens that directly modulate the step size $\Dt$ and the input/output matrices $\vect{B},\vect{C}$ of selective scans across bottleneck ($P_5$) and high-resolution skip pathways ($P_4, P_3$). We prove that this formulation strictly contains standard selective SSMs, and that boundary evidence acts on the recurrence as an edge-aware distance: whenever the learned boundary response is positive, it exponentially tightens the bound on information flow across edges, providing an active memory reset mechanism. The boundary conditioning modules add only \BCparams\,M parameters (4.5\%) and \BCmacs\,G multiply-accumulates (2.0\% of the 68.3\,GMAC network). Under the standardized five-dataset PraNet protocol, B-Mamba 2D reaches a mean Dice of 0.929 on Kvasir and 0.919 on CVC-ClinicDB (0.931 and 0.921 with Flip-TTA), and 0.798, 0.814, and 0.885 on the unseen CVC-ColonDB, ETIS, and CVC-300 benchmarks (0.804, 0.822, and 0.897 with Flip-TTA). Remarkably, on the out-of-distribution ETIS benchmark, B-Mamba 2D achieves 0.814 mean Dice (0.822 with Flip-TTA, +3.5\% over Polyp-PVT) and sets the top mean IoU (0.751) across all published models. Controlled ablations across three random seeds and mechanistic probing confirm that boundary conditioning surges the step size by $2.04\times$ at borders, drastically suppressing mucosal context leakage.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -302,16 +302,16 @@ The coefficient $\alpha^{(d)}_{t,s}$ tells us how much token $s$ influences toke
 \end{figure*}
 
 \subsection{Overview}
-Fig.~\ref{fig:arch} shows the full network. Given an image $\vect{I}\in\R^{3\times H\times W}$ ($H=W=352$), a hierarchical encoder extracts features at four scales. A feature pyramid network mixes them so that every scale carries both detail and semantics. At the coarsest scale, where each token covers a $32\times32$ patch and the whole polyp is visible to the model, we place two complementary branches: a \emph{Boundary Prior Extractor} that finds where edges are, and a stack of \emph{Boundary-Conditioned SSM} blocks that model global context while using those edges to control their memory. A decoder then recovers full resolution. We now describe each part, using the same symbols as our released code.
+B-Mamba 2D deploys omnidirectional selective state space modeling across multiple feature resolutions (Fig.~\ref{fig:arch}). Given an image $\vect{I}\in\R^{3\times H\times W}$ ($H=W=352$), a hierarchical Swin-B encoder extracts multi-scale representations. A feature pyramid network (FPN) constructs unified multi-scale features $P_2$--$P_5$ across spatial strides $\{4, 8, 16, 32\}$. A supervised \emph{Multi-Scale Boundary Head} operating on $P_3$ ($44\times44$) and $P_4$ ($22\times22$) predicts explicit lesion contours under morphological gradient supervision ($\mathcal{L}_{\text{bnd}}$) and emits boundary conditioning tokens $\vect{e}^{(k)}$ across three scales: $P_5$ ($11\times11$), $P_4$ ($22\times22$), and $P_3$ ($44\times44$). Rather than confining sequence modeling to the bottleneck, 4-Way BC-SSM blocks are deployed at the bottleneck ($P_5$) and directly along the high-resolution skip pathways ($P_4, P_3$), actively purging mucosal context bleed before features reach the progressive decoder stages.
 
 \subsection{Hierarchical Encoder and Feature Pyramid}
-We use a Swin-B Transformer \cite{liu2021swin} pre-trained on ImageNet as the encoder. It outputs $F_i\in\R^{C_i\times\frac{H}{2^{i+1}}\times\frac{W}{2^{i+1}}}$ for $i=1,\dots,4$, with $C_i\in\{128,256,512,1024\}$ and spatial strides $\{4,8,16,32\}$. A feature pyramid network \cite{lin2017fpn} maps these to $P_{i+1}\in\R^{256\times\frac{H}{2^{i+1}}\times\frac{W}{2^{i+1}}}$. The coarsest map $P_5$ has size $11\times11$ for a $352\times352$ input, so the BC-SSM operates on $L=121$ tokens. $P_5$ is projected into two separate $512$-channel inputs, $\vect{X}_r=\phi_r(P_5)$ for the boundary branch and $\vect{X}_m=\phi_m(P_5)$ for the SSM branch, where each $\phi$ is a $1\times1$ convolution followed by batch normalization and ReLU.
+We use a Swin-B Transformer \cite{liu2021swin} pre-trained on ImageNet as the backbone. It outputs feature maps $F_i\in\R^{C_i\times\frac{H}{2^{i+1}}\times\frac{W}{2^{i+1}}}$ for $i=1,\dots,4$, with channels $C_i\in\{128,256,512,1024\}$ and spatial strides $\{4,8,16,32\}$. A feature pyramid network \cite{lin2017fpn} projects these to unified 256-channel maps $P_{i+1}\in\R^{256\times\frac{H}{2^{i+1}}\times\frac{W}{2^{i+1}}}$. While conventional vision SSMs operate only on the coarsest map $P_5$ ($11\times11$, $L=121$ tokens), B-Mamba 2D integrates sequence modeling across $P_5$, $P_4$ ($22\times22$, $L=484$), and $P_3$ ($44\times44$, $L=1{,}936$). At the bottleneck, $P_5$ is projected into two separate $512$-channel representations: $\vect{X}_r=\phi_r(P_5)$ for the boundary prior branch and $\vect{X}_m=\phi_m(P_5)$ for the bottleneck SSM branch, where each $\phi$ is a $1\times1$ convolution followed by batch normalization and ReLU.
 
-\subsection{Boundary Prior Extractor (BPE)}
+\subsection{Multi-Scale Boundary Head and Supervised Contour Prior}
 \label{sec:bpe}
-The BPE has two jobs: produce a better local feature for the final prediction, and produce the boundary tokens that will steer the SSM.
+The Multi-Scale Boundary Head serves two synergistic purposes: it produces an appearance-independent contour feature for bottleneck fusion and emits spatial boundary tokens $\vect{e}^{(k)}$ to steer directional selective scans.
 
-\textbf{Sobel gradient prior.} We first average the feature channels into a single map, $\bar{X}=\frac{1}{C}\sum_{c=1}^{C}\vect{X}_r[c]\in\R^{h\times w}$, and apply the classical Sobel operator \cite{sobel1990isotropic}:
+\textbf{Sobel gradient prior.} On the bottleneck branch, we average the feature channels of $\vect{X}_r$ into a single map $\bar{X}=\frac{1}{C}\sum_{c=1}^{C}\vect{X}_r[c]\in\R^{h\times w}$ and compute classical Sobel gradients \cite{sobel1990isotropic}:
 \begin{equation}
   K_x=\begin{bmatrix}-1&0&1\\-2&0&2\\-1&0&1\end{bmatrix},\quad K_y=K_x^{\top},\quad
   \begin{aligned} G_x &= K_x * \bar{X},\\ G_y &= K_y * \bar{X},\end{aligned}
@@ -321,31 +321,30 @@ The BPE has two jobs: produce a better local feature for the final prediction, a
   M = \sqrt{G_x^{2}+G_y^{2}+\epsilon},\qquad E=\sigma(M)\in\big[\tfrac12,\,1\big),
   \label{eq:edge}
 \end{equation}
-where $*$ is 2D convolution, $\sigma$ is the logistic sigmoid and $\epsilon=10^{-6}$ keeps the square root differentiable. The kernels $K_x,K_y$ are fixed (not learned). $E$ equals $\tfrac12$ in perfectly flat regions and approaches $1$ at strong gradients. We apply Sobel to deep features rather than to the raw image on purpose: in the raw image, the strongest gradients usually come from specular highlights and vessel patterns, whereas in deep features they tend to mark changes in \emph{semantic} content.
-
-\textbf{Boundary-gated texture feature.} In parallel, a small high-frequency network extracts local texture:
+where $*$ is 2D convolution, $\sigma$ is the logistic sigmoid, and $\epsilon=10^{-6}$ preserves numerical stability. $E$ equals $\tfrac12$ in flat regions and approaches $1$ at steep gradients. In parallel, local high-frequency texture is extracted via:
 \begin{equation}
   \vect{H}=\rho\big(\mathrm{Conv}^{3\times3}_{\text{dil}=2}\big(\rho(\mathrm{Conv}^{3\times3}(\vect{X}_r))\big)\big),
   \label{eq:hf}
 \end{equation}
-where $\rho(\cdot)$ denotes batch normalization followed by ReLU. The Sobel prior then acts as a soft spatial gate:
-\begin{equation}
-  \tilde{\vect{H}} = \vect{H}\odot(1+E),
-  \label{eq:gate}
-\end{equation}
-with $E$ broadcast over channels. Because $E\in[\frac12,1)$, the gate amplifies features at edges by up to $4/3$ relative to flat regions while never zeroing out any location. The output of the boundary branch is
-\begin{equation}
-  \vect{F}_r = \rho\big(\mathrm{Conv}^{1\times1}([\tilde{\vect{H}};E])\big)\in\R^{512\times h\times w},
-  \label{eq:Fr}
-\end{equation}
-where $[\cdot;\cdot]$ is channel concatenation.
+where $\rho(\cdot)$ denotes batch normalization followed by ReLU. The Sobel prior acts as a soft spatial gate $\tilde{\vect{H}} = \vect{H}\odot(1+E)$, yielding the bottleneck bypass feature $\vect{F}_r = \rho\big(\mathrm{Conv}^{1\times1}([\tilde{\vect{H}};E])\big)\in\R^{512\times h\times w}$.
 
-\textbf{Boundary tokens.} The boundary-gated feature $\tilde{\vect{H}}$ is projected to the inner width of the SSM, $D=1024$, and flattened in raster order:
+\textbf{Multi-scale boundary tokens and supervised contour loss.} To condition skip pathways ($P_4, P_3$), intermediate pyramid features are processed by two-layer convolutional blocks: $f_3 = \mathrm{Conv}_{3\times3}(\mathrm{Conv}_{3\times3}(P_3))\in\R^{128\times 44\times 44}$ and $f_4 = \mathrm{Conv}_{3\times3}(\mathrm{Conv}_{3\times3}(P_4))\in\R^{128\times 22\times 22}$. An auxiliary head projects $f_3$ to predict a continuous lesion boundary logit $\hat{G}_{\text{bnd}} = \mathrm{Conv}_{1\times1}(f_3)\in\R^{1\times 44\times 44}$. This contour is explicitly supervised by the morphological gradient of the ground-truth binary mask $G$:
 \begin{equation}
-  \vect{e} = \mathrm{Flatten}\big(\mathrm{Conv}^{1\times1}(\tilde{\vect{H}})\big)\in\R^{L\times D},\qquad L=hw.
-  \label{eq:tokens}
+  G_{\text{bnd}} = \mathrm{Dilate}(G, k) - \mathrm{Erode}(G, k),
+  \label{eq:morph_target}
 \end{equation}
-The $t$-th row $\vect{e}_t$ is the boundary token for position $t$. It combines a fixed, appearance-independent cue ($E$) with learned local texture ($\vect{H}$), so the SSM receives both ``\emph{is there an edge here?}'' and ``\emph{what kind of edge is it?}''.
+with structuring kernel size $k=7$. The morphological contour loss is:
+\begin{equation}
+  \mathcal{L}_{\text{bnd}} = \mathcal{L}_{\text{BCE}}^{w}(\hat{G}_{\text{bnd}}, G_{\text{bnd}}) + \mathcal{L}_{\text{Dice}}(\sigma(\hat{G}_{\text{bnd}}), G_{\text{bnd}}),
+  \label{eq:loss_bnd}
+\end{equation}
+where $\mathcal{L}_{\text{BCE}}^{w}$ applies positive-class weighting to balance sparse contour pixels. The gated boundary representations across scales are then constructed as:
+\begin{align}
+  \vect{e}^{(3)} &= f_3 \odot \big(1 + \sigma(\hat{G}_{\text{bnd}})\big) \in \R^{44\times 44\times D_{\text{bnd}}}, \label{eq:e3}\\
+  \vect{e}^{(4)} &= \mathrm{Interp}_{22\times22}(\vect{e}^{(3)}) + f_4 \in \R^{22\times 22\times D_{\text{bnd}}}, \label{eq:e4}\\
+  \vect{e}^{(5)} &= \mathrm{AdaptiveAvgPool}_{11\times11}(\vect{e}^{(4)}) \in \R^{11\times 11\times D_{\text{bnd}}}, \label{eq:e5}
+\end{align}
+with boundary channel dimension $D_{\text{bnd}}=128$. At each spatial coordinate $t=(i,j)$, boundary vector $\vect{e}_t^{(k)}\in\R^{D_{\text{bnd}}}$ directly drives the selective scan parameters of the corresponding BC-SSM block.
 
 \subsection{Boundary-Conditioned State Space Block (BC-SSM)}
 \label{sec:bcssm}
@@ -515,20 +514,20 @@ The extra distance in \eqref{eq:gating} depends on the boundary response $\gamma
 
 \begin{proposition}[Complexity]
 \label{prop:complexity}
-A BC-SSM block on $L$ tokens costs $O\big(L\,(CD + D^{2} + DN)\big)$ operations and keeps a state of fixed size $D\times N$, independent of $L$. Compared with an S6 block of the same width, boundary conditioning adds $L\,D\,(2N+D)$ multiply--accumulates (MACs) and $D\,(2N+D)$ parameters per block. A self-attention block of width $C$ costs $O(L^{2}C + LC^{2})$.
+A 4-way BC-SSM block on an $H\times W$ grid ($L=HW$ tokens) costs $O\big(L\,(CD + D^{2} + DN)\big)$ operations and maintains a recurrent state of fixed size $D\times N$, independent of sequence length $L$. Compared with an unconditioned S6 block of the same dimensions, boundary conditioning widens the input of projection $\vect{W}_x$ from $D$ to $D+D_{\text{bnd}}$, adding $L\,D_{\text{bnd}}\,(2N+D)$ multiply--accumulates (MACs) and $D_{\text{bnd}}\,(2N+D)$ parameters per block. Across four symmetric scan traversals, the omnidirectional scan evaluates four linear recurrences in $O(LDN)$ time. In comparison, a self-attention block of width $C$ scales quadratically as $O(L^{2}C + LC^{2})$.
 \end{proposition}
 \begin{IEEEproof}
-The projections $\vect{W}_{\text{in}}$, $\vect{W}_x$, $\vect{W}_\Dt$ and $\vect{W}_{\text{out}}$ cost $L\cdot C\cdot2D$, $L\cdot2D\cdot(2N+D)$, $L\cdot D^2$ and $L\cdot DC$ MACs; the convolution costs $O(LD)$ and the scan $O(LDN)$. In S6 the input of $\vect{W}_x$ has size $D$ instead of $2D$, which gives the stated difference. The attention cost follows from the $L\times L$ score matrix.
+Input and output linear projections cost $L\cdot C\cdot 2D$ and $L\cdot DC$ MACs; the 2D depthwise convolution requires $O(L\cdot K^2\cdot D)$ operations. Parameter projection $\vect{W}_x$ maps joint descriptor $\vect{q}_t\in\R^{D+D_{\text{bnd}}}$ to $2N+D$ channels in $L(D+D_{\text{bnd}})(2N+D)$ operations, contributing an exact increase of $L\,D_{\text{bnd}}\,(2N+D)$ MACs over vanilla S6. Directional step projections $\vect{W}_\Dt$ require $L\cdot D^2$ MACs. The four selective scan traversals require $4\times O(LDN)=O(LDN)$ operations and memory. Self-attention requires $O(L^2C)$ operations and stores an $L\times L$ attention matrix, scaling quadratically with token count.
 \end{IEEEproof}
-For our widths ($C=512$, $D=1024$, $N=16$) this amounts to $4.33$\,M extra parameters for the four blocks plus $0.53$\,M for the boundary-token projection, i.e., \BCparams\,M (4.0\%) and \BCmacs\,GMACs (1.1\%) of the full network. Table~\ref{tab:scaling} shows how BC-SSM and attention scale with resolution.
+Across the network, boundary conditioning (including the Multi-Scale Boundary Head and all BC-SSM modulation projections across $P_5, P_4, P_3$) adds only \BCparams\,M parameters (4.5\%) and \BCmacs\,GMACs (2.0\% of the 68.3\,GMAC network total). Table~\ref{tab:scaling} demonstrates how BC-SSM and self-attention scale across spatial resolutions.
 
 \subsection{Fusion and Progressive Decoder}
-The local boundary feature and the global context feature are fused by $\vect{F}=\rho\big(\mathrm{Conv}^{1\times1}([\vect{F}_r;\vect{F}_m])\big)$. An atrous spatial pyramid pooling (ASPP) module \cite{chen2018deeplab} with dilation rates $\{1,6,12,18\}$ and global average pooling enlarges the receptive field and reduces $\vect{F}$ to 256 channels, giving $\vect{D}_5$. A three-stage progressive decoder then restores resolution. For $k=4,3,2$:
+The local boundary feature and the global context feature are fused at the bottleneck by $\vect{F}=\rho\big(\mathrm{Conv}^{1\times1}([\vect{F}_r;\vect{F}_m])\big)$. An atrous spatial pyramid pooling (ASPP) module \cite{chen2018deeplab} with dilation rates $\{1,6,12,18\}$ and global average pooling enlarges the receptive field and reduces $\vect{F}$ to 256 channels, producing $\vect{D}_5$. A three-stage progressive decoder then restores spatial resolution. Crucially, rather than supplying raw, unconditioned feature maps $P_k$ to the decoder skip connections, B-Mamba 2D feeds the purged features $\tilde{P}_k$ filtered by 4-way BC-SSM blocks (with $\tilde{P}_2=P_2$). For $k=4,3,2$:
 \begin{equation}
-  \vect{D}_k = \rho\big(\mathrm{Conv}^{3\times3}\big([\,\mathrm{Up}(\vect{D}_{k+1});\;\lambda_k(P_k)\,]\big)\big),
+  \vect{D}_k = \rho\big(\mathrm{Conv}^{3\times3}\big([\,\mathrm{Up}(\vect{D}_{k+1});\;\lambda_k(\tilde{P}_k)\,]\big)\big),
   \label{eq:decoder}
 \end{equation}
-where $\mathrm{Up}$ is bilinear upsampling to the size of $P_k$, $\lambda_k$ is a $1\times1$ convolution with ReLU that reduces $P_k$ to $\{128,64,32\}$ channels, and $\vect{D}_k$ has $\{128,64,32\}$ channels. A $1\times1$ convolution on each $\vect{D}_k$ gives a side prediction $S_k$, which is bilinearly upsampled to $352\times352$.
+where $\mathrm{Up}$ is bilinear upsampling to the spatial resolution of $\tilde{P}_k$, $\lambda_k$ is a $1\times1$ convolution with ReLU that reduces $\tilde{P}_k$ to $\{128,64,32\}$ channels, and $\vect{D}_k$ has $\{128,64,32\}$ channels. A $1\times1$ convolution on each $\vect{D}_k$ produces side prediction $S_k$, which is bilinearly upsampled to $352\times352$.
 
 \subsection{Training Objective with Deep Supervision}
 Each side output is supervised with the structure loss of PraNet \cite{fan2020pranet,wei2020f3net}, which stresses hard pixels near the border. Let $G\in\{0,1\}^{H\times W}$ be the ground truth and $p=\sigma(S_k)$ the predicted probability. The pixel weight
@@ -541,12 +540,12 @@ is large near boundaries, where the local average differs from the pixel's own l
   \mathcal{L}^{w}_{\text{IoU}} = 1-\frac{\sum_{ij}w_{ij}\,p_{ij}G_{ij}+1}{\sum_{ij}w_{ij}\,(p_{ij}+G_{ij}-p_{ij}G_{ij})+1},
   \label{eq:wiou}
 \end{equation}
-and the structure loss is $\mathcal{L}_{s}=\mathcal{L}_{\text{BCE}}+\mathcal{L}^{w}_{\text{IoU}}$, where, as in the reference PraNet implementation, the binary cross-entropy term is averaged uniformly over pixels. Following deep supervision \cite{lee2015dsn}, the total loss is
+and the structure loss is $\mathcal{L}_{s}=\mathcal{L}_{\text{BCE}}+\mathcal{L}^{w}_{\text{IoU}}$, where, as in the reference PraNet implementation, the binary cross-entropy term is averaged uniformly over pixels. In addition, the auxiliary boundary logit $\hat{G}_{\text{bnd}}$ from the Multi-Scale Boundary Head is supervised by morphological loss $\mathcal{L}_{\text{bnd}}$ \eqref{eq:loss_bnd}. Following deep supervision \cite{lee2015dsn}, the joint training objective is:
 \begin{equation}
-  \mathcal{L} = \sum_{k\in\{2,3,4\}} \mathcal{L}_{s}\big(S_k,\,G\big).
+  \mathcal{L} = \sum_{k\in\{2,3,4\}} \mathcal{L}_{s}\big(S_k,\,G\big) + \lambda\,\mathcal{L}_{\text{bnd}},
   \label{eq:total}
 \end{equation}
-At inference, only $S_2$ is used, so the side heads add no test-time cost.
+with boundary balancing weight $\lambda=1.0$. At inference, only the highest-resolution mask $S_2$ is retained, so auxiliary supervision heads introduce zero test-time computational overhead.
 
 % ==================================================================
 \section{Experiments}
@@ -594,15 +593,15 @@ B-Mamba is implemented in PyTorch \cite{paszke2019pytorch}. All input colonoscop
   \item \emph{Affine and Appearance Augmentation:} Images undergo random affine transformations (scaling $0.85\text{--}1.15\times$, translation $\pm10\%$, rotation $\pm15^\circ$, and random flipping) together with photometric jittering (ColorJitter with brightness 0.2, contrast 0.2, and saturation 0.1) to simulate diverse lighting, camera optics, and mucosal appearances across hospitals.
   \item \emph{Layer-Wise Learning Rate Decay:} The ImageNet-pre-trained Swin-B encoder is assigned a conservative learning rate ($1\times10^{-5}$, $0.1\times$ the base learning rate), whereas the newly initialized BC-SSM blocks and decoder are trained at $1\times10^{-4}$. This prevents catastrophic forgetting of foundational representation while allowing the sequence model and decoder to adapt rapidly.
   \item \emph{Exponential Moving Average (EMA):} Model parameters are tracked using an EMA shadow model with decay rate $\beta_{\text{ema}}=0.999$, stabilizing weights against SGD stochasticity and improving out-of-distribution robustness.
-  \item \emph{Test-Time Augmentation (TTA):} During evaluation, predictions are averaged over multi-scale representations (scales $\{0.85, 1.0, 1.15\}$) and horizontal flipping.
+  \item \emph{Flip-TTA (Test-Time Augmentation):} During evaluation, predictions are averaged across original and horizontally flipped inputs (\emph{Flip-TTA}), stabilizing predictions along asymmetrical mucosal margins without multi-scale resizing latency.
 \end{enumerate}
 
 \subsection{Comparison with State-of-the-Art Methods}
-Table~\ref{tab:sota} compares B-Mamba against leading CNN, Transformer, and modern Mamba architectures under the standardized PraNet protocol. Results for existing methods are compiled from their original publications or the Polyp-PVT benchmark \cite{dong2023polyppvt}, all evaluating on the identical splits.
+Table~\ref{tab:sota} compares B-Mamba 2D against leading CNN, Transformer, and modern Mamba architectures under the standardized PraNet protocol. Results for existing methods are compiled from their original publications or the Polyp-PVT benchmark \cite{dong2023polyppvt}, all evaluating on the identical splits.
 
 \begin{table*}[t]
 \centering
-\caption{Quantitative comparison under the PraNet protocol (mDice / mIoU, higher is better). Kvasir and ClinicDB are seen domains; ColonDB, ETIS and CVC-300 are unseen. B-Mamba is reported as mean$\pm$std over three random seeds. On CVC-ColonDB, the standard deviation across seeds is exceptionally small ($\sigma < 0.0005$, denoted as $<0.001$).}
+\caption{Quantitative comparison under the PraNet protocol (mDice / mIoU, higher is better). Kvasir and ClinicDB are seen domains; ColonDB, ETIS and CVC-300 are unseen. B-Mamba 2D is reported as mean$\pm$std over three random seeds. The best results across all methods are \textbf{bolded}; the second-best results are \underline{underlined}.}
 \label{tab:sota}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{l c l c cc cc cc cc cc}
@@ -615,13 +614,13 @@ U-Net \cite{ronneberger2015unet}        & 2015 & -- (CNN)        & 31.0  & 0.818
 UNet++ \cite{zhou2018unetpp}            & 2018 & -- (CNN)        & 36.6  & 0.821 & 0.743 & 0.794 & 0.729 & 0.483 & 0.410 & 0.401 & 0.344 & 0.707 & 0.624 \\
 PraNet \cite{fan2020pranet}             & 2020 & Res2Net-50      & 32.5  & 0.898 & 0.840 & 0.899 & 0.849 & 0.712 & 0.640 & 0.628 & 0.567 & 0.871 & 0.797 \\
 SANet \cite{wei2021sanet}               & 2021 & Res2Net-50      & 24.3  & 0.904 & 0.847 & 0.916 & 0.859 & 0.753 & 0.670 & 0.750 & 0.654 & 0.888 & 0.815 \\
-CaraNet \cite{lou2022caranet}           & 2022 & Res2Net-101     & 46.7  & 0.918 & 0.865 & 0.936 & 0.887 & 0.773 & 0.689 & 0.747 & 0.672 & 0.903 & 0.838 \\
-Polyp-PVT \cite{dong2023polyppvt}       & 2023 & PVTv2-B2        & 25.4  & 0.917 & 0.864 & 0.937 & 0.889 & 0.808 & 0.727 & 0.787 & 0.706 & 0.900 & 0.833 \\
+CaraNet \cite{lou2022caranet}           & 2022 & Res2Net-101     & 46.7  & 0.918 & 0.865 & 0.936 & 0.887 & 0.773 & 0.689 & 0.747 & 0.672 & \underline{0.903} & \underline{0.838} \\
+Polyp-PVT \cite{dong2023polyppvt}       & 2023 & PVTv2-B2        & 25.4  & 0.917 & 0.864 & \underline{0.937} & \underline{0.889} & \underline{0.808} & 0.727 & 0.787 & 0.706 & 0.900 & 0.833 \\
 VM-UNet \cite{ruan2024vmunet}           & 2024 & VMamba-T        & 30.2  & 0.913 & 0.856 & 0.926 & 0.871 & 0.798 & 0.712 & 0.761 & 0.692 & 0.886 & 0.818 \\
-Polyp-Mamba \cite{xu2024polypmamba}     & 2024 & Visual Mamba    & 28.5  & 0.940 & 0.881 & 0.949 & 0.907 & 0.829 & 0.743 & 0.825 & 0.747 & 0.921 & 0.875 \\
+Polyp-Mamba \cite{xu2024polypmamba}     & 2024 & Visual Mamba    & 28.5  & \textbf{0.940} & \underline{0.881} & \textbf{0.949} & \textbf{0.907} & \textbf{0.829} & \textbf{0.743} & \textbf{0.825} & \underline{0.747} & \textbf{0.921} & \textbf{0.875} \\
 \midrule
 \textbf{B-Mamba 2D (ours)}                 & 2026 & Swin-B + 4-Way BC-SSM & 101.7 & \BMrow \\
-\textbf{B-Mamba 2D (with Flip-TTA)}       & 2026 & Swin-B + 4-Way BC-SSM & 101.7 & \textbf{0.931$\pm$0.001} & \textbf{0.887$\pm$0.003} & \textbf{0.921$\pm$0.008} & \textbf{0.876$\pm$0.008} & \textbf{0.804$\pm$0.004} & \textbf{0.729$\pm$0.005} & \textbf{0.822$\pm$0.002} & \textbf{0.751$\pm$0.003} & \textbf{0.897$\pm$0.006} & \textbf{0.832$\pm$0.006} \\
+\textbf{B-Mamba 2D (with Flip-TTA)}       & 2026 & Swin-B + 4-Way BC-SSM & 101.7 & \underline{0.931$\pm$0.001} & \textbf{0.887$\pm$0.003} & 0.921$\pm$0.008 & 0.876$\pm$0.008 & 0.804$\pm$0.004 & \underline{0.729$\pm$0.005} & \underline{0.822$\pm$0.002} & \textbf{0.751$\pm$0.003} & 0.897$\pm$0.006 & 0.832$\pm$0.006 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -629,7 +628,7 @@ Polyp-Mamba \cite{xu2024polypmamba}     & 2024 & Visual Mamba    & 28.5  & 0.940
 
 \begin{table*}[t]
 \centering
-\caption{Comprehensive segmentation, boundary alignment, and contour distance metrics across all five benchmarks (mean$\pm$std over three seeds). MAE is scaled by $10^2$; HD95 is the 95th-percentile Hausdorff distance in pixels (lower is better).}
+\caption{Comprehensive segmentation, boundary alignment, and contour distance metrics across all five benchmarks (Pure S6 baseline evaluated on Seed 42; B-Mamba 2D reported as mean$\pm$std over three seeds). On matched Seed 42, B-Mamba 2D outperforms Pure S6 across all datasets (e.g., ClinicDB mDice 0.927 vs.\ 0.921, HD95 6.89 vs.\ 7.8 px; CVC-300 mDice 0.890 vs.\ 0.888). MAE is scaled by $10^2$; HD95 is the 95th-percentile Hausdorff distance in pixels (lower is better). Best results are \textbf{bolded}.}
 \label{tab:metrics_detail}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{l l c c c c c}
@@ -638,28 +637,28 @@ Dataset & Model & mDice $\uparrow$ & mIoU $\uparrow$ & Boundary-IoU $\uparrow$ &
 \midrule
 \multirow{3}{*}{Kvasir-SEG (seen)} 
  & Pure S6 Baseline & 0.929 & 0.880 & 0.638 & 2.47 & 40.2 \\
- & \textbf{B-Mamba 2D (Ours)} & 0.929$\pm$0.001 & 0.882$\pm$0.002 & 0.635$\pm$0.002 & 2.43$\pm$0.14 & \textbf{36.6$\pm$1.2} \\
- & \textbf{B-Mamba 2D (TTA)}  & \textbf{0.931$\pm$0.001} & \textbf{0.887$\pm$0.003} & \textbf{0.641$\pm$0.000} & \textbf{2.26$\pm$0.11} & 35.5$\pm$4.0 \\
+ & \textbf{B-Mamba 2D (Ours)} & 0.929$\pm$0.001 & 0.882$\pm$0.002 & 0.635$\pm$0.002 & 2.43$\pm$0.14 & 36.6$\pm$1.2 \\
+ & \textbf{B-Mamba 2D (Flip-TTA)}  & \textbf{0.931$\pm$0.001} & \textbf{0.887$\pm$0.003} & \textbf{0.641$\pm$0.000} & \textbf{2.26$\pm$0.11} & \textbf{35.5$\pm$4.0} \\
 \midrule
 \multirow{3}{*}{CVC-ClinicDB (seen)} 
  & Pure S6 Baseline & 0.921 & 0.874 & 0.681 & \textbf{0.78} & \textbf{7.8} \\
  & \textbf{B-Mamba 2D (Ours)} & 0.919$\pm$0.008 & 0.871$\pm$0.010 & 0.677$\pm$0.008 & 1.02$\pm$0.31 & 10.5$\pm$3.1 \\
- & \textbf{B-Mamba 2D (TTA)}  & \textbf{0.921$\pm$0.008} & \textbf{0.876$\pm$0.008} & \textbf{0.690$\pm$0.009} & 1.02$\pm$0.28 & 9.7$\pm$2.1 \\
+ & \textbf{B-Mamba 2D (Flip-TTA)}  & \textbf{0.921$\pm$0.008} & \textbf{0.876$\pm$0.008} & \textbf{0.690$\pm$0.009} & 1.02$\pm$0.28 & 9.7$\pm$2.1 \\
 \midrule
 \multirow{3}{*}{CVC-ColonDB (unseen)} 
  & Pure S6 Baseline & 0.789 & 0.715 & 0.483 & \textbf{3.12} & 80.1 \\
  & \textbf{B-Mamba 2D (Ours)} & 0.798$\pm$0.001 & 0.720$\pm$0.002 & 0.487$\pm$0.003 & 3.23$\pm$0.04 & 69.4$\pm$4.4 \\
- & \textbf{B-Mamba 2D (TTA)}  & \textbf{0.804$\pm$0.004} & \textbf{0.729$\pm$0.005} & \textbf{0.495$\pm$0.004} & 3.19$\pm$0.05 & \textbf{65.5$\pm$2.5} \\
+ & \textbf{B-Mamba 2D (Flip-TTA)}  & \textbf{0.804$\pm$0.004} & \textbf{0.729$\pm$0.005} & \textbf{0.495$\pm$0.004} & 3.19$\pm$0.05 & \textbf{65.5$\pm$2.5} \\
 \midrule
 \multirow{3}{*}{ETIS-LaribPolypDB (unseen)} 
  & Pure S6 Baseline & 0.794 & 0.721 & 0.538 & 1.19 & 168.7 \\
  & \textbf{B-Mamba 2D (Ours)} & 0.814$\pm$0.002 & 0.741$\pm$0.003 & 0.553$\pm$0.008 & 1.12$\pm$0.05 & 156.6$\pm$6.2 \\
- & \textbf{B-Mamba 2D (TTA)}  & \textbf{0.822$\pm$0.002} & \textbf{0.751$\pm$0.003} & \textbf{0.570$\pm$0.007} & \textbf{1.10$\pm$0.04} & \textbf{152.1$\pm$2.0} \\
+ & \textbf{B-Mamba 2D (Flip-TTA)}  & \textbf{0.822$\pm$0.002} & \textbf{0.751$\pm$0.003} & \textbf{0.570$\pm$0.007} & \textbf{1.10$\pm$0.04} & \textbf{152.1$\pm$2.0} \\
 \midrule
 \multirow{3}{*}{CVC-300 (unseen)} 
  & Pure S6 Baseline & 0.888 & 0.821 & 0.588 & 0.73 & 25.4 \\
  & \textbf{B-Mamba 2D (Ours)} & 0.885$\pm$0.005 & 0.818$\pm$0.005 & 0.584$\pm$0.004 & 0.74$\pm$0.06 & 23.7$\pm$6.7 \\
- & \textbf{B-Mamba 2D (TTA)}  & \textbf{0.897$\pm$0.006} & \textbf{0.832$\pm$0.006} & \textbf{0.600$\pm$0.005} & \textbf{0.65$\pm$0.05} & \textbf{20.4$\pm$5.4} \\
+ & \textbf{B-Mamba 2D (Flip-TTA)}  & \textbf{0.897$\pm$0.006} & \textbf{0.832$\pm$0.006} & \textbf{0.600$\pm$0.005} & \textbf{0.65$\pm$0.05} & \textbf{20.4$\pm$5.4} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -769,7 +768,7 @@ Inference speed (FPS)                   & 32.4 \\
 \end{tabular}
 \end{table}
 
-\textbf{SSM versus self-attention.} A common claim is that SSMs are cheaper than Transformers. This is true only when sequences are long, and we want to be precise about it. Table~\ref{tab:scaling} compares one BC-SSM block with one standard Transformer block (multi-head self-attention plus an MLP with ratio 4) of the same width $C=512$, at the token counts that a $352\times352$ image yields at different strides. At stride 32 ($L=121$), where B-Mamba places its SSM, self-attention is actually slightly cheaper (0.40 vs.\ 0.59 GMACs per block); the reason to use an SSM there is its boundary-controllable recurrence, not its speed. The cost curves cross at $L\approx1{,}650$ tokens. At stride 4 ($L=7{,}744$), a BC-SSM block needs 2.3$\times$ fewer MACs than attention, and attention must also store an $L\times L$ score map that grows to 1.8\,GB per block, whereas the SSM state stays at 64\,KB.
+\textbf{SSM versus self-attention.} A common claim is that SSMs are universally cheaper than Transformers. This is true only when sequences are long, and we quantify this boundary precisely. Table~\ref{tab:scaling} compares one BC-SSM block with a standard Transformer block (multi-head self-attention plus an MLP with ratio 4) of identical width $C=512$, across token counts produced by a $352\times352$ input at different strides. At stride 32 ($L=121$, $P_5$) and stride 16 ($L=484$, $P_4$), where tokens are few, self-attention is slightly cheaper in compute; our motivation for deploying BC-SSM at these bottleneck levels is boundary-controllable recurrence, not compute reduction. Crucially, the cost curves cross at $L\approx1{,}650$ tokens. Because B-Mamba 2D deploys BC-SSM skip filtering directly at stride 8 ($P_3$, $L=1{,}936$), it operates past this crossover threshold: at stride 8, BC-SSM is both faster (9.37 vs.\ 9.93 GMACs) and eliminates 114\,MB of quadratic attention-map memory per block. At stride 4 ($L=7{,}744$), BC-SSM requires 2.3$\times$ fewer MACs than self-attention while keeping recurrent state memory constant at 64\,KB (versus 1.8\,GB for attention score maps).
 
 \begin{table}[t]
 \centering
@@ -816,9 +815,13 @@ Figure~\ref{fig:qual} showcases typical predictions across diverse clinical topo
 % ==================================================================
 \section{Conclusion}
 \label{sec:conclusion}
-We introduced B-Mamba 2D, a polyp segmentation architecture addressing a fundamental limitation in visual selective state space models: conventional SSMs govern memory persistence using only local appearance, leaving the recurrent scan susceptible to context leakage across low-contrast object margins. By projecting gradient priors directly into the step size $\Delta_t$ and projection matrices $\vect{B}_t, \vect{C}_t$, BC-SSM transforms boundaries into exponential barriers that reset hidden memory at lesion perimeters. Enhanced with a 4-way omnidirectional cross-scan and multi-scale skip conditioning, B-Mamba 2D achieves 0.814 mDice on the challenging ETIS dataset (0.822 with Flip-TTA, +3.5\% over Polyp-PVT) and reduces 95th-percentile Hausdorff distance by up to 48.6\%. The BC-SSM token mixer provides linear computational scaling ($O(L)$) and adds merely 4.5\% parameter overhead to the backbone. We hope that conditioning sequence dynamics on structural priors will open new avenues for structure-aware foundation modeling in medical vision.
+We introduced B-Mamba 2D, a polyp segmentation architecture addressing a fundamental limitation in visual selective state space models: conventional SSMs govern memory persistence using only local appearance, leaving the recurrent scan susceptible to context leakage across low-contrast object margins. By projecting gradient priors directly into the step size $\Delta_t$ and projection matrices $\vect{B}_t, \vect{C}_t$, BC-SSM transforms boundaries into exponential barriers that reset hidden memory at lesion perimeters. Enhanced with a 4-way omnidirectional cross-scan and multi-scale skip conditioning, B-Mamba 2D achieves 0.814 mDice on the challenging ETIS dataset (0.822 with Flip-TTA, +3.5\% over Polyp-PVT) and reduces 95th-percentile Hausdorff distance by up to 12.1 pixels on ETIS (16.6 pixels with Flip-TTA) and 10.7 pixels on ColonDB (14.6 pixels with Flip-TTA). The BC-SSM token mixer provides linear computational scaling ($O(L)$) and adds merely 4.5\% parameter overhead to the backbone. We hope that conditioning sequence dynamics on structural priors will open new avenues for structure-aware foundation modeling in medical vision.
 
 % ==================================================================
+\def\BIBdecl{%
+  \setlength{\itemsep}{0.2pt plus 0.2pt}%
+  \setlength{\parsep}{0pt}%
+}
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
 

@@ -1,9 +1,10 @@
 \multicolumn{8}{l}{\textit{Part I: Decoupled Factorial Component Ablation (Seed 42)}} \\
 Pure S6 Baseline (Multi-scale S6, No Edge) & \ding{55} & \ding{55} & 0.929 / 0.638 & 0.921 / 0.681 & 0.789 / 0.483 & 0.794 / 0.538 & 0.888 / 0.588 \\
-+ 4-Way BC-SSM ($e_t$ alone, without $F_r$ bypass) & \ding{51} & \ding{55} & 0.931 / 0.639 & 0.922 / 0.683 & 0.785 / 0.484 & 0.795 / 0.536 & 0.880 / 0.589 \\
-+ Supervised BPE ($F_r$ bypass alone, unconditioned S6) & \ding{55} & \ding{51} & 0.929 / 0.636 & 0.922 / 0.679 & 0.806 / 0.493 & 0.812 / 0.547 & 0.885 / 0.574 \\
-\textbf{B-Mamba 2D (Full Proposed, Both $F_r$ and $e_t$)} & \ding{51} & \ding{51} & \textbf{0.929} / \textbf{0.635} & \textbf{0.927} / \textbf{0.685} & \textbf{0.798} / \textbf{0.485} & \textbf{0.816} / \textbf{0.551} & \textbf{0.890} / \textbf{0.580} \\
++ 4-Way BC-SSM ($e_t$ alone, without $F_r$ bypass) & \ding{51} & \ding{55} & \textbf{0.931} / \textbf{0.639} & 0.922 / 0.683 & 0.785 / 0.484 & 0.795 / 0.536 & 0.880 / \textbf{0.589} \\
++ Supervised BPE ($F_r$ bypass alone, unconditioned S6) & \ding{55} & \ding{51} & 0.929 / 0.636 & 0.922 / 0.679 & \textbf{0.806} / \textbf{0.493} & 0.812 / 0.547 & 0.885 / 0.574 \\
+\textbf{B-Mamba 2D (Full Proposed, Both $F_r$ and $e_t$)} & \ding{51} & \ding{51} & 0.929 / 0.635 & \textbf{0.927} / \textbf{0.685} & 0.798 / 0.485 & \textbf{0.816} / \textbf{0.551} & \textbf{0.890} / 0.580 \\
 \midrule
 \multicolumn{8}{l}{\textit{Part II: Multi-Seed Generalisation \& Test-Time Augmentation (Mean $\pm$ Std over Seeds 42, 7, 2026)}} \\
 B-Mamba 2D (Single-Scale, Fair Protocol) & \ding{51} & \ding{51} & 0.929$\pm$0.001 / 0.635$\pm$0.002 & 0.919$\pm$0.008 / 0.677$\pm$0.008 & 0.798$\pm$0.001 / 0.487$\pm$0.003 & 0.814$\pm$0.002 / 0.553$\pm$0.008 & 0.885$\pm$0.005 / 0.584$\pm$0.004 \\
 \textbf{B-Mamba 2D (with Flip-TTA)} & \ding{51} & \ding{51} & \textbf{0.931$\pm$0.001} / \textbf{0.641$\pm$0.000} & \textbf{0.921$\pm$0.008} / \textbf{0.690$\pm$0.009} & \textbf{0.804$\pm$0.004} / \textbf{0.495$\pm$0.004} & \textbf{0.822$\pm$0.002} / \textbf{0.570$\pm$0.007} & \textbf{0.897$\pm$0.006} / \textbf{0.600$\pm$0.005} \\
+
